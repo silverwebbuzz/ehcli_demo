@@ -5,10 +5,10 @@
  */
 
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'silverwebbuzz_in_eclinicpro_home';
-    private $user = 'silverwebbuzz_in_eclinicpro_home';
-    private $password = 'V%asirLVDe';
+    private $host = getenv('DB_HOST') ?: 'localhost';
+    private $db_name = getenv('DB_NAME') ?: 'silverwebbuzz_in_eclinicpro_home';
+    private $user = getenv('DB_USER') ?: 'silverwebbuzz_in_eclinicpro_home';
+    private $password = getenv('DB_PASSWORD') ?: '';
     private $charset = 'utf8mb4';
 
     private $conn;
