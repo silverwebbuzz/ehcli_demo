@@ -1,0 +1,999 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Syne',var(--font-sans,sans-serif);background:transparent;color:var(--color-text-primary)}
+
+  .nav{display:flex;gap:4px;padding:16px 0 12px;flex-wrap:wrap;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:24px}
+  .nav-btn{font-family:'Syne',sans-serif;font-size:12px;font-weight:500;letter-spacing:.03em;padding:6px 14px;border:0.5px solid var(--color-border-tertiary);border-radius:20px;background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:all .2s}
+  .nav-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+  .nav-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+  .section{display:none}.section.active{display:block}
+
+  /* Clinic identity strip */
+  .clinic-strip{border-radius:12px;padding:20px 24px;margin-bottom:20px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .clinic-avatar{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#0F6E56,#1D9E75);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .clinic-name{font-size:18px;font-weight:700}
+  .clinic-meta{font-size:12px;color:var(--color-text-secondary);margin-top:3px;line-height:1.6}
+  .clinic-badges{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .cbadge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;border:0.5px solid var(--color-border-tertiary)}
+
+  /* Removed modules notice */
+  .removed-bar{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;line-height:1.6}
+  .removed-bar strong{color:var(--color-text-primary)}
+
+  /* Feature tables */
+  .module-card{border:0.5px solid var(--color-border-tertiary);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .module-header{padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .module-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .module-title{font-size:14px;font-weight:600}
+  .module-tag{font-size:11px;padding:2px 8px;border-radius:10px;margin-left:auto;font-weight:500}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{padding:8px 14px;text-align:left;font-weight:500;font-size:11px;letter-spacing:.04em;color:var(--color-text-secondary);background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);text-transform:uppercase}
+  td{padding:8px 14px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--color-background-secondary)}
+  .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
+  .bp1{background:#FAECE7;color:#993C1D}.bp2{background:#FAEEDA;color:#BA7517}.bp3{background:#E6F1FB;color:#185FA5}
+  .bstar{background:#EAF3DE;color:#3B6D11}
+  .role-chip{display:inline-block;font-size:11px;padding:2px 6px;border-radius:6px;border:0.5px solid var(--color-border-tertiary);margin:1px;color:var(--color-text-secondary)}
+
+  /* Changed/removed tag */
+  .tag-removed{background:#FCEBEB;color:#A32D2D;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:500}
+  .tag-changed{background:#FAEEDA;color:#BA7517;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:500}
+  .tag-kept{background:#EAF3DE;color:#3B6D11;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:500}
+  .tag-new{background:#EEEDFE;color:#534AB7;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:500}
+
+  /* DB Schema */
+  .db-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+  .db-table{border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden}
+  .db-table-head{padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .db-table-name{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace}
+  .db-table-desc{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+  .db-field{display:flex;align-items:center;gap:6px;padding:5px 14px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px;font-family:'JetBrains Mono',monospace}
+  .db-field:last-child{border-bottom:none}
+  .field-name{flex:1;color:var(--color-text-primary)}
+  .field-type{font-size:11px;color:var(--color-text-secondary)}
+  .fpk{background:#FAEEDA;color:#BA7517;font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+  .ffk{background:#E6F1FB;color:#185FA5;font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+  .fuk{background:#EEEDFE;color:#534AB7;font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+
+  /* SQL */
+  .sql-block{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .sql-header{padding:9px 14px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between}
+  .sql-title{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--color-text-secondary);letter-spacing:.04em}
+  .sql-body{padding:12px 14px;overflow-x:auto}
+  pre{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;white-space:pre;color:var(--color-text-primary)}
+  .kw{color:#185FA5;font-weight:600}.cm{color:var(--color-text-secondary);font-style:italic}.str{color:#0F6E56}.num{color:#993C1D}
+
+  /* Architecture */
+  .arch-layer{border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .arch-layer-head{padding:11px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:10px}
+  .arch-layer-num{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .arch-layer-title{font-size:14px;font-weight:600}
+  .arch-layer-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--color-border-tertiary)}
+  .arch-comp{background:var(--color-background-primary);padding:11px 14px}
+  .arch-comp-name{font-size:13px;font-weight:500;margin-bottom:3px}
+  .arch-comp-detail{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+
+  /* Roadmap */
+  .phase{border:0.5px solid var(--color-border-tertiary);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  .phase-header{padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+  .phase-header:hover{background:var(--color-background-secondary)}
+  .phase-num{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+  .phase-info{flex:1}
+  .phase-title{font-size:14px;font-weight:600}
+  .phase-sub{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
+  .phase-weeks{font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;border:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+  .phase-body{padding:0 16px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+  .task-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .task-row:last-child{border-bottom:none}
+  .task-num{font-size:11px;color:var(--color-text-secondary);font-family:'JetBrains Mono',monospace;min-width:24px;padding-top:1px}
+  .task-main{flex:1}
+  .task-title{font-size:13px;font-weight:500;margin-bottom:2px}
+  .task-detail{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+  .task-tech{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+  .tech-tag{font-size:11px;padding:2px 6px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);font-family:'JetBrains Mono',monospace}
+  .collapsible{display:none}.collapsible.open{display:block}
+  .chevron{transition:transform .2s;font-size:12px;color:var(--color-text-secondary)}
+  .phase-header.open .chevron{transform:rotate(180deg)}
+
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  @media(max-width:540px){.grid-3{grid-template-columns:1fr 1fr}}
+  .stat-card{background:var(--color-background-secondary);border-radius:8px;padding:12px 14px}
+  .stat-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .stat-val{font-size:20px;font-weight:700}
+
+  .section-title{font-size:14px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em}
+
+  .homeo-tag{background:#E1F5EE;color:#0F6E56;font-size:11px;padding:3px 8px;border-radius:6px;font-weight:500;display:inline-block;margin:2px}
+
+  .diff-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+  .diff-table th{background:var(--color-background-secondary);padding:8px 14px;text-align:left;font-size:11px;font-weight:500;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);text-transform:uppercase;letter-spacing:.04em}
+  .diff-table td{padding:8px 14px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top}
+  .diff-table tr:last-child td{border-bottom:none}
+</style>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="show('overview')">What Changed</button>
+  <button class="nav-btn" onclick="show('features')">Feature Tables</button>
+  <button class="nav-btn" onclick="show('schema')">DB Schema</button>
+  <button class="nav-btn" onclick="show('sql')">MySQL Queries</button>
+  <button class="nav-btn" onclick="show('arch')">Architecture</button>
+  <button class="nav-btn" onclick="show('roadmap')">Build Roadmap</button>
+</div>
+
+<!-- ═══ OVERVIEW ═══ -->
+<div id="overview" class="section active">
+
+  <div class="clinic-strip">
+    <div class="clinic-avatar">🌿</div>
+    <div>
+      <div class="clinic-name">Dr. Feelgood's Homeopathic Clinic</div>
+      <div class="clinic-meta">
+        Dr. Mitesh Prajapati · 16+ years · Ahmedabad, Gujarat<br>
+        Gota Road, opp. Shukan Platinum, Vandematram Circle<br>
+        Mon–Sat 9:30–1:30 & 4:30–8:30 · Sun 10–12
+      </div>
+    </div>
+    <div class="clinic-badges">
+      <span class="cbadge">Homeopathy</span>
+      <span class="cbadge">Skin · Allergy · Digestive</span>
+      <span class="cbadge">09727832228</span>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="stat-card"><div class="stat-label">System type</div><div class="stat-val" style="font-size:15px">Single Clinic</div></div>
+    <div class="stat-card"><div class="stat-label">Modules</div><div class="stat-val">22</div></div>
+    <div class="stat-card"><div class="stat-label">DB tables</div><div class="stat-val">18</div></div>
+    <div class="stat-card"><div class="stat-label">Build time</div><div class="stat-val">10 wk</div></div>
+    <div class="stat-card"><div class="stat-label">Stack</div><div class="stat-val" style="font-size:13px">PHP 8.2 + MySQL 8</div></div>
+    <div class="stat-card"><div class="stat-label">URL</div><div class="stat-val" style="font-size:12px">app.drfeelgoods.in</div></div>
+  </div>
+
+  <p class="section-title">What's removed (SaaS stripped out)</p>
+  <div class="removed-bar">
+    The following were SaaS-only features. Since this is a <strong>single-clinic private system</strong> for Dr. Feelgood's, all multi-tenancy, subscription tiers, and super admin features are <strong>completely removed</strong>. This makes the codebase simpler, faster to build, and easier to maintain.
+  </div>
+
+  <table class="diff-table">
+    <tr><th>Removed module</th><th>Why removed</th><th>Status</th></tr>
+    <tr><td>Multi-tenancy (clinic_id everywhere)</td><td>One clinic — no need to isolate data by tenant</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Subdomain routing (clinic1.myclinic.in)</td><td>Single URL: app.drfeelgoods.in</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Subscription tiers (Basic/Pro/Enterprise)</td><td>No monetisation layer needed</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Super Admin panel</td><td>No platform-level management needed</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Tenant onboarding wizard</td><td>System is pre-installed, no self-signup</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Razorpay subscription billing</td><td>Clinic is the customer, not the SaaS buyer</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>Plan enforcement middleware</td><td>All features unlocked for this single clinic</td><td><span class="tag-removed">Removed</span></td></tr>
+    <tr><td>tenants table</td><td>No more tenant isolation — global config file instead</td><td><span class="tag-removed">Removed</span></td></tr>
+  </table>
+
+  <p class="section-title">What's adapted for homeopathy</p>
+  <table class="diff-table">
+    <tr><th>Module</th><th>Change from generic clinic</th><th>Status</th></tr>
+    <tr><td>Prescription engine</td><td>Homeopathic remedy DB instead of allopathic drugs. Fields: potency (6C, 30C, 200C, 1M), form (pellets, liquid, powder), case-taking notes column</td><td><span class="tag-changed">Adapted</span></td></tr>
+    <tr><td>Visit / case taking</td><td>Extended case-taking form: miasmatic analysis, constitutional type, mental generals, physical generals, peculiar symptoms — standard homeopathy protocol</td><td><span class="tag-changed">Adapted</span></td></tr>
+    <tr><td>Diagnosis</td><td>Replaced ICD-10 drug-based diagnosis with symptom-rubric mapping (homeopathy uses repertorisation, not ICD-10 primarily)</td><td><span class="tag-changed">Adapted</span></td></tr>
+    <tr><td>Treatment plans</td><td>Homeopathy treatment templates per condition (allergy, psoriasis, eczema, thyroid, anxiety) — Dr. Mitesh's 16 conditions pre-loaded</td><td><span class="tag-changed">Adapted</span></td></tr>
+    <tr><td>Diet & nutrition</td><td>Critical for homeopathy — dietary restrictions (coffee, mint, raw onion, camphor) that antidote remedies. Plus veg/non-veg meal planning.</td><td><span class="tag-kept">Enhanced</span></td></tr>
+    <tr><td>Patient registration</td><td>Added homeopathy-specific fields: constitution type, thermal sensitivity (hot/cold patient), miasm, food cravings/aversions</td><td><span class="tag-changed">Adapted</span></td></tr>
+    <tr><td>Before/After gallery sync</td><td>Each patient can have before/after photos linked to treatment (matches the website's Before/After Gallery section)</td><td><span class="tag-new">New</span></td></tr>
+    <tr><td>Online consultation</td><td>Website says "online consultations available upon request" — add a simple video/call booking flow</td><td><span class="tag-new">New</span></td></tr>
+  </table>
+
+  <p class="section-title">Clinic hours pre-configured in system</p>
+  <div class="removed-bar">
+    <strong>Mon–Sat Morning:</strong> 9:30 AM – 1:30 PM &nbsp;|&nbsp; <strong>Mon–Sat Evening:</strong> 4:30 PM – 8:30 PM &nbsp;|&nbsp; <strong>Sunday:</strong> 10:00 AM – 12:00 PM<br>
+    Slot duration: <strong>30 minutes</strong> (website says "30 min consultation required") &nbsp;|&nbsp; Max patients per slot: configurable by admin
+  </div>
+
+</div>
+
+<!-- ═══ FEATURES ═══ -->
+<div id="features" class="section">
+
+  <div class="clinic-strip" style="padding:14px 20px">
+    <div class="clinic-avatar" style="width:36px;height:36px;font-size:16px">🌿</div>
+    <div><div style="font-size:14px;font-weight:600">Dr. Feelgood's — app.drfeelgoods.in</div><div class="clinic-meta">22 modules · Homeopathy-adapted · PHP + MySQL</div></div>
+  </div>
+
+  <!-- Module 1 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#FAECE7">
+      <div class="module-icon" style="background:#D85A30;color:#fff">🧑‍⚕️</div>
+      <div class="module-title" style="color:#993C1D">Patient Management</div>
+      <div class="module-tag" style="background:#D85A30;color:#fff">Core</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Homeopathy specific</th><th>Priority</th></tr>
+      <tr><td><strong>Registration (3-step)</strong></td><td>Personal → Medical → Homeopathy profile</td><td>Step 3: constitution type, thermal sensitivity, miasm, cravings/aversions</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>UHID auto-gen</strong></td><td>Format: DFG-00001 (DrFeelGoods prefix)</td><td>—</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>QR patient card</strong></td><td>Scan at reception → instant load. Printable A6 PDF</td><td>—</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+      <tr><td><strong>Patient search</strong></td><td>Live search by name/phone/UHID. Filter by condition.</td><td>Filter by constitutional type</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Before/after photos</strong></td><td>Per-patient photo gallery per treatment cycle</td><td>Skin cases: eczema, psoriasis progress tracking</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 2 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#E1F5EE">
+      <div class="module-icon" style="background:#1D9E75;color:#fff">📋</div>
+      <div class="module-title" style="color:#0F6E56">Case Taking & Clinical Visit</div>
+      <div class="module-tag" style="background:#1D9E75;color:#fff">Homeopathy Core</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Homeopathy specific</th><th>Priority</th></tr>
+      <tr><td><strong>Extended case-taking form</strong></td><td>Chief complaint, history, family history, mental state</td><td>Mental generals, physical generals, peculiar symptoms, miasmatic analysis — standard Kent/Hahnemann protocol</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Symptom repertorisation</strong></td><td>Doctor enters rubrics → system suggests top remedies</td><td>Based on simplified Kent's repertory mapping stored in DB</td><td><span class="badge bp2">P2 ⭐</span></td></tr>
+      <tr><td><strong>Clinical notes (rich text)</strong></td><td>Free-text clinical notes with auto-save</td><td>Case progress notes across follow-up visits</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Follow-up scheduler</strong></td><td>Set follow-up date from visit screen → auto-creates appointment</td><td>Typical: follow-up every 4–6 weeks in homeopathy</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Visit history timeline</strong></td><td>All visits in chronological timeline on patient profile</td><td>Shows remedy progression across visits</td><td><span class="badge bp1">P1</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 3 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#EEEDFE">
+      <div class="module-icon" style="background:#7F77DD;color:#fff">💊</div>
+      <div class="module-title" style="color:#534AB7">Homeopathic Prescription</div>
+      <div class="module-tag" style="background:#7F77DD;color:#fff">Homeopathy Core</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Homeopathy specific</th><th>Priority</th></tr>
+      <tr><td><strong>Remedy search</strong></td><td>Live search on homeopathic remedy DB (500+ remedies)</td><td>Search by remedy name (Arsenicum, Sulphur, Lycopodium…)</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Potency selector</strong></td><td>Dropdown: 6C, 30C, 200C, 1M, 10M, CM</td><td>Critical — potency is as important as remedy in homeopathy</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Form & dosage</strong></td><td>Form: pellets, liquid, powder, mother tincture. Dose: 4 pills / 10 drops etc.</td><td>—</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Antidote warnings</strong></td><td>Show dietary antidotes for selected remedy automatically</td><td>Coffee, mint, camphor, raw onion antidote many remedies — flag these</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+      <tr><td><strong>Print Rx PDF</strong></td><td>Dr. Feelgood's letterhead, signature block, remedy + potency + dosage</td><td>Clinic branding from website</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>WhatsApp Rx</strong></td><td>Send PDF to patient's WhatsApp on prescription save</td><td>—</td><td><span class="badge bp1">P1</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 4 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#FAEEDA">
+      <div class="module-icon" style="background:#EF9F27;color:#fff">📅</div>
+      <div class="module-title" style="color:#BA7517">Appointment & Queue</div>
+      <div class="module-tag" style="background:#EF9F27;color:#fff">Operations</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Detail</th><th>Priority</th></tr>
+      <tr><td><strong>Slot booking</strong></td><td>30-min slots per clinic session</td><td>Morning (9:30–1:30), Evening (4:30–8:30), Sunday morning (10–12)</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Walk-in token</strong></td><td>Quick walk-in registration → token number assigned</td><td>Common at Indian clinics — skip slot booking</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Today's queue</strong></td><td>Receptionist view: token list, current patient, status</td><td>Mark: waiting → in consultation → completed</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Online consultation booking</strong></td><td>Patient books online slot; system generates video call link (Google Meet / Zoom)</td><td>Website mentions "online consultations available"</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>WhatsApp reminder</strong></td><td>Auto reminder 24h + 1h before appointment</td><td>—</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Appointment calendar</strong></td><td>Week/month view. Filter by status. Rebook cancelled.</td><td>—</td><td><span class="badge bp2">P2</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 5 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#E1F5EE">
+      <div class="module-icon" style="background:#1D9E75;color:#fff">📈</div>
+      <div class="module-title" style="color:#0F6E56">Vitals Tracker</div>
+      <div class="module-tag" style="background:#1D9E75;color:#fff">Clinical</div>
+    </div>
+    <table>
+      <tr><th>Vital</th><th>Tracking detail</th><th>Chart type</th><th>Priority</th></tr>
+      <tr><td><strong>Blood pressure</strong></td><td>Systolic + diastolic per visit</td><td>Line chart across visits</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Blood sugar</strong></td><td>Fasting / PP / random</td><td>Line chart with normal range band</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Weight + BMI</strong></td><td>Weight → BMI auto-calculated</td><td>Bar chart</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Temperature + SpO2</strong></td><td>Per visit entry</td><td>Latest reading displayed</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>Thyroid values</strong></td><td>TSH, T3, T4 from lab reports</td><td>Timeline (thyroid is a key condition here)</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+      <tr><td><strong>Skin condition score</strong></td><td>Doctor rates improvement 1–10 per visit (PASI-like)</td><td>Progress bar + trend for psoriasis/eczema cases</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 6 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#FAECE7">
+      <div class="module-icon" style="background:#D85A30;color:#fff">🥗</div>
+      <div class="module-title" style="color:#993C1D">Diet & Nutrition Plans</div>
+      <div class="module-tag" style="background:#D85A30;color:#fff">Unique ⭐</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Homeopathy link</th><th>Priority</th></tr>
+      <tr><td><strong>Remedy antidote diet</strong></td><td>Auto-list restricted items per prescribed remedy</td><td>Coffee/mint/camphor prohibition shown per remedy</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+      <tr><td><strong>7-day meal plan</strong></td><td>Condition-based + veg/non-veg aware plan generation</td><td>Custom plans for thyroid, skin, digestive, hormonal conditions</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>WhatsApp diet plan</strong></td><td>PDF diet chart sent to patient via WhatsApp</td><td>—</td><td><span class="badge bp2">P2</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 7 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#E6F1FB">
+      <div class="module-icon" style="background:#378ADD;color:#fff">🧾</div>
+      <div class="module-title" style="color:#185FA5">Billing & Invoicing</div>
+      <div class="module-tag" style="background:#378ADD;color:#fff">Operations</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Priority</th></tr>
+      <tr><td><strong>Auto invoice from visit</strong></td><td>Consultation fee pre-set. Add medicine charges. GST included.</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>UPI QR payment</strong></td><td>Razorpay UPI QR at billing desk. Webhook confirms payment.</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Cash / card modes</strong></td><td>Manual payment recording. Status: paid/pending/overdue.</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>GST invoice PDF</strong></td><td>Dr. Feelgood's letterhead, GSTIN, line items, total</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Revenue reports</strong></td><td>Daily/monthly revenue. Patient count. Top services.</td><td><span class="badge bp2">P2</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 8 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#EAF3DE">
+      <div class="module-icon" style="background:#639922;color:#fff">🧪</div>
+      <div class="module-title" style="color:#3B6D11">Lab Reports</div>
+      <div class="module-tag" style="background:#639922;color:#fff">Clinical</div>
+    </div>
+    <table>
+      <tr><th>Feature</th><th>Detail</th><th>Priority</th></tr>
+      <tr><td><strong>Upload lab PDF</strong></td><td>Doctor/staff uploads patient's lab report PDF</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Share via WhatsApp</strong></td><td>Secure download link sent to patient</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Thyroid panel tracker</strong></td><td>Extract TSH/T3/T4 values → plot trend chart</td><td><span class="badge bp1">P1 ⭐</span></td></tr>
+      <tr><td><strong>Lab history</strong></td><td>All reports listed per patient with date, test name</td><td><span class="badge bp2">P2</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 9 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#EEEDFE">
+      <div class="module-icon" style="background:#7F77DD;color:#fff">👤</div>
+      <div class="module-title" style="color:#534AB7">Roles & Staff</div>
+      <div class="module-tag" style="background:#7F77DD;color:#fff">Admin</div>
+    </div>
+    <table>
+      <tr><th>Role</th><th>Access</th><th>Priority</th></tr>
+      <tr><td><strong>Admin (Dr. Mitesh)</strong></td><td>Full access: patients, visits, prescriptions, billing, reports, staff management, settings</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Receptionist</strong></td><td>Appointments, patient registration, billing, basic patient lookup</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Assistant / Nurse</strong></td><td>Vitals entry, lab uploads, queue management</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>Patient (portal)</strong></td><td>View own history, prescriptions, invoices, book appointment</td><td><span class="badge bp2">P2</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Module 10 -->
+  <div class="module-card">
+    <div class="module-header" style="background:#FAEEDA">
+      <div class="module-icon" style="background:#EF9F27;color:#fff">📊</div>
+      <div class="module-title" style="color:#BA7517">Analytics Dashboard</div>
+      <div class="module-tag" style="background:#EF9F27;color:#fff">Admin</div>
+    </div>
+    <table>
+      <tr><th>Widget</th><th>What it shows</th><th>Priority</th></tr>
+      <tr><td><strong>Today's stats</strong></td><td>Patients seen, appointments pending, revenue today</td><td><span class="badge bp1">P1</span></td></tr>
+      <tr><td><strong>Monthly revenue chart</strong></td><td>12-month bar chart</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>Top conditions</strong></td><td>Most frequent diagnoses (skin, thyroid, allergy…)</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>Patient growth</strong></td><td>New vs returning patients per month</td><td><span class="badge bp2">P2</span></td></tr>
+      <tr><td><strong>Appointment completion rate</strong></td><td>% completed vs no-show vs cancelled</td><td><span class="badge bp3">P3</span></td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══ DB SCHEMA ═══ -->
+<div id="schema" class="section">
+  <div class="clinic-strip" style="padding:14px 20px">
+    <div class="clinic-avatar" style="width:36px;height:36px;font-size:16px">🗄️</div>
+    <div><div style="font-size:14px;font-weight:600">18 tables · No clinic_id (single clinic) · MySQL 8 · InnoDB</div><div class="clinic-meta">Homeopathy-adapted fields: potency, constitution, miasm, remedy antidotes</div></div>
+  </div>
+
+  <div class="db-grid">
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#EEEDFE"><div class="db-table-name" style="color:#534AB7">users</div><div class="db-table-desc">Staff + patient portal accounts</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="db-field"><span class="field-name">email</span><span class="field-type">VARCHAR(150)</span><span class="fuk">UK</span></div>
+      <div class="db-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+      <div class="db-field"><span class="field-name">password_hash</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="db-field"><span class="field-name">role</span><span class="field-type">ENUM(admin,receptionist,assistant,patient)</span></div>
+      <div class="db-field"><span class="field-name">is_active</span><span class="field-type">TINYINT(1)</span></div>
+      <div class="db-field"><span class="field-name">last_login_at</span><span class="field-type">TIMESTAMP NULL</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#E1F5EE"><div class="db-table-name" style="color:#0F6E56">patients</div><div class="db-table-desc">Master patient record (homeo-adapted)</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">user_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK (portal)</span></div>
+      <div class="db-field"><span class="field-name">uhid</span><span class="field-type">VARCHAR(20) DFG-00001</span><span class="fuk">UK</span></div>
+      <div class="db-field"><span class="field-name">name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="db-field"><span class="field-name">dob</span><span class="field-type">DATE</span></div>
+      <div class="db-field"><span class="field-name">gender</span><span class="field-type">ENUM(M,F,Other)</span></div>
+      <div class="db-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+      <div class="db-field"><span class="field-name">email</span><span class="field-type">VARCHAR(150)</span></div>
+      <div class="db-field"><span class="field-name">address</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">blood_group</span><span class="field-type">ENUM(A+,A-,B+,B-,O+,O-,AB+,AB-)</span></div>
+      <div class="db-field"><span class="field-name">veg_type</span><span class="field-type">ENUM(veg,nonveg,vegan,eggetarian)</span></div>
+      <div class="db-field"><span class="field-name">allergies</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">chronic_conditions</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">constitution_type</span><span class="field-type">ENUM(psoric,sycotic,syphilitic,tubercular,mixed)</span></div>
+      <div class="db-field"><span class="field-name">thermal_sensitivity</span><span class="field-type">ENUM(hot_patient,cold_patient,chilly)</span></div>
+      <div class="db-field"><span class="field-name">food_cravings</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">food_aversions</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">photo_path</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="db-field"><span class="field-name">qr_token</span><span class="field-type">VARCHAR(64)</span><span class="fuk">UK</span></div>
+      <div class="db-field"><span class="field-name">is_active</span><span class="field-type">TINYINT(1) DEFAULT 1</span></div>
+      <div class="db-field"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#FAEEDA"><div class="db-table-name" style="color:#BA7517">appointments</div><div class="db-table-desc">Booking + walk-in tokens</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">scheduled_at</span><span class="field-type">DATETIME</span></div>
+      <div class="db-field"><span class="field-name">session</span><span class="field-type">ENUM(morning,evening,sunday)</span></div>
+      <div class="db-field"><span class="field-name">type</span><span class="field-type">ENUM(walkin,prebooked,online)</span></div>
+      <div class="db-field"><span class="field-name">status</span><span class="field-type">ENUM(scheduled,confirmed,in_progress,completed,cancelled,no_show)</span></div>
+      <div class="db-field"><span class="field-name">chief_complaint</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">token_number</span><span class="field-type">SMALLINT</span></div>
+      <div class="db-field"><span class="field-name">is_followup</span><span class="field-type">TINYINT(1) DEFAULT 0</span></div>
+      <div class="db-field"><span class="field-name">reminder_sent</span><span class="field-type">TINYINT(1) DEFAULT 0</span></div>
+      <div class="db-field"><span class="field-name">created_by</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK→users</span></div>
+      <div class="db-field"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#E1F5EE"><div class="db-table-name" style="color:#0F6E56">visits</div><div class="db-table-desc">Clinical encounter + homeopathy case taking</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">appointment_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">chief_complaint</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">mental_generals</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">physical_generals</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">peculiar_symptoms</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">miasmatic_analysis</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">diagnosis</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">clinical_notes</span><span class="field-type">LONGTEXT</span></div>
+      <div class="db-field"><span class="field-name">condition_score</span><span class="field-type">TINYINT (1-10 improvement)</span></div>
+      <div class="db-field"><span class="field-name">follow_up_date</span><span class="field-type">DATE</span></div>
+      <div class="db-field"><span class="field-name">visited_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#EEEDFE"><div class="db-table-name" style="color:#534AB7">remedies</div><div class="db-table-desc">Homeopathic remedy master DB</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">name</span><span class="field-type">VARCHAR(100) e.g. Arsenicum Album</span></div>
+      <div class="db-field"><span class="field-name">abbreviation</span><span class="field-type">VARCHAR(20) e.g. Ars.alb</span></div>
+      <div class="db-field"><span class="field-name">source</span><span class="field-type">ENUM(plant,mineral,animal,nosode,sarcode)</span></div>
+      <div class="db-field"><span class="field-name">key_indications</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">antidotes</span><span class="field-type">JSON (list of antidoting substances)</span></div>
+      <div class="db-field"><span class="field-name">complementaries</span><span class="field-type">JSON (complementary remedies)</span></div>
+      <div class="db-field"><span class="field-name">dietary_restrictions</span><span class="field-type">TEXT (coffee,mint,camphor etc)</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#EEEDFE"><div class="db-table-name" style="color:#534AB7">prescriptions</div><div class="db-table-desc">Homeopathic prescriptions per visit</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">visit_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">remedy_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">potency</span><span class="field-type">ENUM(6C,30C,200C,1M,10M,CM,Q,LM1)</span></div>
+      <div class="db-field"><span class="field-name">form</span><span class="field-type">ENUM(pellets,liquid,powder,mother_tincture,trituration)</span></div>
+      <div class="db-field"><span class="field-name">dosage</span><span class="field-type">VARCHAR(60) e.g. 4 pills</span></div>
+      <div class="db-field"><span class="field-name">frequency</span><span class="field-type">ENUM(OD,BD,TDS,weekly,monthly,SOS)</span></div>
+      <div class="db-field"><span class="field-name">duration_days</span><span class="field-type">SMALLINT</span></div>
+      <div class="db-field"><span class="field-name">instructions</span><span class="field-type">TEXT</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#FAEEDA"><div class="db-table-name" style="color:#BA7517">vitals</div><div class="db-table-desc">Per-visit measurements + condition score</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">visit_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">bp_systolic</span><span class="field-type">SMALLINT</span></div>
+      <div class="db-field"><span class="field-name">bp_diastolic</span><span class="field-type">SMALLINT</span></div>
+      <div class="db-field"><span class="field-name">blood_sugar</span><span class="field-type">DECIMAL(5,1)</span></div>
+      <div class="db-field"><span class="field-name">weight_kg</span><span class="field-type">DECIMAL(5,2)</span></div>
+      <div class="db-field"><span class="field-name">height_cm</span><span class="field-type">DECIMAL(5,1)</span></div>
+      <div class="db-field"><span class="field-name">bmi</span><span class="field-type">DECIMAL(4,1) GENERATED</span></div>
+      <div class="db-field"><span class="field-name">temperature</span><span class="field-type">DECIMAL(4,1)</span></div>
+      <div class="db-field"><span class="field-name">spo2</span><span class="field-type">TINYINT</span></div>
+      <div class="db-field"><span class="field-name">tsh</span><span class="field-type">DECIMAL(6,3) (thyroid)</span></div>
+      <div class="db-field"><span class="field-name">t3</span><span class="field-type">DECIMAL(6,2)</span></div>
+      <div class="db-field"><span class="field-name">t4</span><span class="field-type">DECIMAL(6,2)</span></div>
+      <div class="db-field"><span class="field-name">skin_score</span><span class="field-type">TINYINT (1-10 improvement)</span></div>
+      <div class="db-field"><span class="field-name">recorded_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#E6F1FB"><div class="db-table-name" style="color:#185FA5">invoices</div><div class="db-table-desc">Billing records</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">visit_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">invoice_number</span><span class="field-type">VARCHAR(20) DFG-INV-0001</span><span class="fuk">UK</span></div>
+      <div class="db-field"><span class="field-name">subtotal</span><span class="field-type">DECIMAL(10,2)</span></div>
+      <div class="db-field"><span class="field-name">discount</span><span class="field-type">DECIMAL(10,2) DEFAULT 0</span></div>
+      <div class="db-field"><span class="field-name">gst_amount</span><span class="field-type">DECIMAL(10,2) DEFAULT 0</span></div>
+      <div class="db-field"><span class="field-name">total</span><span class="field-type">DECIMAL(10,2)</span></div>
+      <div class="db-field"><span class="field-name">payment_mode</span><span class="field-type">ENUM(cash,upi,card,online)</span></div>
+      <div class="db-field"><span class="field-name">status</span><span class="field-type">ENUM(draft,paid,overdue)</span></div>
+      <div class="db-field"><span class="field-name">razorpay_order_id</span><span class="field-type">VARCHAR(60)</span></div>
+      <div class="db-field"><span class="field-name">paid_at</span><span class="field-type">TIMESTAMP NULL</span></div>
+      <div class="db-field"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#E6F1FB"><div class="db-table-name" style="color:#185FA5">invoice_items</div><div class="db-table-desc">Line items per invoice</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">invoice_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">description</span><span class="field-type">VARCHAR(200)</span></div>
+      <div class="db-field"><span class="field-name">qty</span><span class="field-type">SMALLINT DEFAULT 1</span></div>
+      <div class="db-field"><span class="field-name">unit_price</span><span class="field-type">DECIMAL(10,2)</span></div>
+      <div class="db-field"><span class="field-name">total</span><span class="field-type">DECIMAL(10,2) GENERATED</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#EAF3DE"><div class="db-table-name" style="color:#3B6D11">lab_reports</div><div class="db-table-desc">Patient test reports</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">visit_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK NULL</span></div>
+      <div class="db-field"><span class="field-name">test_name</span><span class="field-type">VARCHAR(150)</span></div>
+      <div class="db-field"><span class="field-name">report_path</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="db-field"><span class="field-name">share_token</span><span class="field-type">VARCHAR(64) — 24h secure link</span></div>
+      <div class="db-field"><span class="field-name">shared_at</span><span class="field-type">TIMESTAMP NULL</span></div>
+      <div class="db-field"><span class="field-name">test_date</span><span class="field-type">DATE</span></div>
+      <div class="db-field"><span class="field-name">uploaded_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#FAECE7"><div class="db-table-name" style="color:#993C1D">patient_photos</div><div class="db-table-desc">Before/after treatment photos</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">visit_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK NULL</span></div>
+      <div class="db-field"><span class="field-name">type</span><span class="field-type">ENUM(before,after,progress)</span></div>
+      <div class="db-field"><span class="field-name">photo_path</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="db-field"><span class="field-name">condition_label</span><span class="field-type">VARCHAR(100) e.g. Psoriasis Week 8</span></div>
+      <div class="db-field"><span class="field-name">is_public</span><span class="field-type">TINYINT(1) — website gallery</span></div>
+      <div class="db-field"><span class="field-name">uploaded_at</span><span class="field-type">TIMESTAMP</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#E1F5EE"><div class="db-table-name" style="color:#0F6E56">notifications</div><div class="db-table-desc">WhatsApp/SMS queue</div></div>
+      <div class="db-field"><span class="field-name">id</span><span class="field-type">BIGINT UNSIGNED</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">patient_id</span><span class="field-type">BIGINT UNSIGNED</span><span class="ffk">FK</span></div>
+      <div class="db-field"><span class="field-name">type</span><span class="field-type">ENUM(whatsapp,sms)</span></div>
+      <div class="db-field"><span class="field-name">template</span><span class="field-type">VARCHAR(50)</span></div>
+      <div class="db-field"><span class="field-name">payload</span><span class="field-type">JSON</span></div>
+      <div class="db-field"><span class="field-name">status</span><span class="field-type">ENUM(queued,sent,failed)</span></div>
+      <div class="db-field"><span class="field-name">scheduled_at</span><span class="field-type">TIMESTAMP</span></div>
+      <div class="db-field"><span class="field-name">sent_at</span><span class="field-type">TIMESTAMP NULL</span></div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-head" style="background:#EEEDFE"><div class="db-table-name" style="color:#534AB7">settings</div><div class="db-table-desc">Clinic-wide config (replaces tenants table)</div></div>
+      <div class="db-field"><span class="field-name">key</span><span class="field-type">VARCHAR(60)</span><span class="fpk">PK</span></div>
+      <div class="db-field"><span class="field-name">value</span><span class="field-type">TEXT</span></div>
+      <div class="db-field"><span class="field-name">updated_at</span><span class="field-type">TIMESTAMP</span></div>
+      <div class="db-field" style="padding:6px 14px;font-size:11px;color:var(--color-text-secondary);font-style:italic">clinic_name, clinic_phone, clinic_email, gstin, consultation_fee, logo_path, razorpay_key, whatsapp_token, slot_duration…</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SQL ═══ -->
+<div id="sql" class="section">
+  <div class="clinic-strip" style="padding:14px 20px">
+    <div class="clinic-avatar" style="width:36px;height:36px;font-size:16px">💾</div>
+    <div><div style="font-size:14px;font-weight:600">MySQL 8 — Complete CREATE TABLE statements</div><div class="clinic-meta">No clinic_id · No tenants table · Homeopathy fields included</div></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- DATABASE</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE DATABASE IF NOT EXISTS</span> drfeelgoods
+  <span class="kw">CHARACTER SET</span> utf8mb4 <span class="kw">COLLATE</span> utf8mb4_unicode_ci;
+<span class="kw">USE</span> drfeelgoods;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: users (staff + patient portal)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> users (
+  id            <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  name          <span class="kw">VARCHAR</span>(<span class="num">100</span>) <span class="kw">NOT NULL</span>,
+  email         <span class="kw">VARCHAR</span>(<span class="num">150</span>) <span class="kw">NOT NULL</span>,
+  phone         <span class="kw">VARCHAR</span>(<span class="num">15</span>),
+  password_hash <span class="kw">VARCHAR</span>(<span class="num">255</span>) <span class="kw">NOT NULL</span>,
+  role          <span class="kw">ENUM</span>(<span class="str">'admin'</span>,<span class="str">'receptionist'</span>,<span class="str">'assistant'</span>,<span class="str">'patient'</span>)
+                <span class="kw">NOT NULL DEFAULT</span> <span class="str">'receptionist'</span>,
+  is_active     <span class="kw">TINYINT</span>(<span class="num">1</span>) <span class="kw">DEFAULT</span> <span class="num">1</span>,
+  remember_token <span class="kw">VARCHAR</span>(<span class="num">100</span>),
+  last_login_at  <span class="kw">TIMESTAMP NULL</span>,
+  created_at    <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">UNIQUE KEY</span> uq_email (email)
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: patients (homeopathy-adapted)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> patients (
+  id              <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  user_id         <span class="kw">BIGINT UNSIGNED NULL</span>,  <span class="cm">-- patient portal login</span>
+  uhid            <span class="kw">VARCHAR</span>(<span class="num">20</span>) <span class="kw">NOT NULL</span>,  <span class="cm">-- DFG-00001</span>
+  name            <span class="kw">VARCHAR</span>(<span class="num">100</span>) <span class="kw">NOT NULL</span>,
+  dob             <span class="kw">DATE</span>,
+  gender          <span class="kw">ENUM</span>(<span class="str">'M'</span>,<span class="str">'F'</span>,<span class="str">'Other'</span>),
+  phone           <span class="kw">VARCHAR</span>(<span class="num">15</span>) <span class="kw">NOT NULL</span>,
+  email           <span class="kw">VARCHAR</span>(<span class="num">150</span>),
+  address         <span class="kw">TEXT</span>,
+  blood_group     <span class="kw">ENUM</span>(<span class="str">'A+'</span>,<span class="str">'A-'</span>,<span class="str">'B+'</span>,<span class="str">'B-'</span>,<span class="str">'O+'</span>,<span class="str">'O-'</span>,<span class="str">'AB+'</span>,<span class="str">'AB-'</span>),
+  veg_type        <span class="kw">ENUM</span>(<span class="str">'veg'</span>,<span class="str">'nonveg'</span>,<span class="str">'vegan'</span>,<span class="str">'eggetarian'</span>) <span class="kw">DEFAULT</span> <span class="str">'veg'</span>,
+  allergies       <span class="kw">TEXT</span>,
+  chronic_conditions <span class="kw">TEXT</span>,
+  <span class="cm">-- Homeopathy-specific fields</span>
+  constitution_type <span class="kw">ENUM</span>(<span class="str">'psoric'</span>,<span class="str">'sycotic'</span>,<span class="str">'syphilitic'</span>,
+                         <span class="str">'tubercular'</span>,<span class="str">'mixed'</span>),
+  thermal_sensitivity <span class="kw">ENUM</span>(<span class="str">'hot_patient'</span>,<span class="str">'cold_patient'</span>,<span class="str">'chilly'</span>),
+  food_cravings   <span class="kw">TEXT</span>,
+  food_aversions  <span class="kw">TEXT</span>,
+  mental_state_notes <span class="kw">TEXT</span>,
+  <span class="cm">-- Media</span>
+  photo_path      <span class="kw">VARCHAR</span>(<span class="num">255</span>),
+  qr_token        <span class="kw">VARCHAR</span>(<span class="num">64</span>) <span class="kw">NOT NULL</span>,
+  is_active       <span class="kw">TINYINT</span>(<span class="num">1</span>) <span class="kw">DEFAULT</span> <span class="num">1</span>,
+  created_at      <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP</span>,
+  updated_at      <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">UNIQUE KEY</span> uq_uhid (uhid),
+  <span class="kw">UNIQUE KEY</span> uq_qr (qr_token),
+  <span class="kw">KEY</span> idx_phone (phone),
+  <span class="kw">KEY</span> idx_name (name),
+  <span class="kw">FOREIGN KEY</span> (user_id) <span class="kw">REFERENCES</span> users(id) <span class="kw">ON DELETE SET NULL</span>
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: remedies (homeopathic remedy master)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> remedies (
+  id                  <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  name                <span class="kw">VARCHAR</span>(<span class="num">100</span>) <span class="kw">NOT NULL</span>,  <span class="cm">-- Arsenicum Album</span>
+  abbreviation        <span class="kw">VARCHAR</span>(<span class="num">20</span>),             <span class="cm">-- Ars.alb</span>
+  source              <span class="kw">ENUM</span>(<span class="str">'plant'</span>,<span class="str">'mineral'</span>,<span class="str">'animal'</span>,<span class="str">'nosode'</span>,<span class="str">'sarcode'</span>),
+  key_indications     <span class="kw">TEXT</span>,
+  antidotes           <span class="kw">JSON</span>,  <span class="cm">-- ["Camphora","Nux Vomica"]</span>
+  complementaries     <span class="kw">JSON</span>,  <span class="cm">-- compatible follow-up remedies</span>
+  dietary_restrictions <span class="kw">TEXT</span>, <span class="cm">-- "Avoid: coffee, mint, camphor, raw onion"</span>
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">FULLTEXT</span> idx_search (name, abbreviation, key_indications)
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: visits (extended case-taking)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> visits (
+  id                 <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  appointment_id     <span class="kw">BIGINT UNSIGNED NULL</span>,
+  patient_id         <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  chief_complaint    <span class="kw">TEXT</span>,
+  <span class="cm">-- Homeopathy case-taking columns</span>
+  mental_generals    <span class="kw">TEXT</span>,  <span class="cm">-- anxiety, fears, irritability, grief...</span>
+  physical_generals  <span class="kw">TEXT</span>,  <span class="cm">-- sleep, appetite, thirst, sweat, thermals</span>
+  peculiar_symptoms  <span class="kw">TEXT</span>,  <span class="cm">-- strange/rare/peculiar symptoms (key in homeo)</span>
+  modalities         <span class="kw">TEXT</span>,  <span class="cm">-- better/worse from heat, cold, motion, rest</span>
+  miasmatic_analysis <span class="kw">TEXT</span>,  <span class="cm">-- psoric/sycotic/syphilitic presentation</span>
+  <span class="cm">-- Clinical</span>
+  diagnosis          <span class="kw">TEXT</span>,
+  clinical_notes     <span class="kw">LONGTEXT</span>,
+  condition_score    <span class="kw">TINYINT UNSIGNED</span>,  <span class="cm">-- 1-10 improvement rating</span>
+  follow_up_date     <span class="kw">DATE</span>,
+  visited_at         <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">KEY</span> idx_patient_visits (patient_id, visited_at),
+  <span class="kw">FOREIGN KEY</span> (patient_id) <span class="kw">REFERENCES</span> patients(id)
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: prescriptions (homeopathic)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> prescriptions (
+  id           <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  visit_id     <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  patient_id   <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  remedy_id    <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  potency      <span class="kw">ENUM</span>(<span class="str">'6C'</span>,<span class="str">'12C'</span>,<span class="str">'30C'</span>,<span class="str">'200C'</span>,<span class="str">'1M'</span>,<span class="str">'10M'</span>,<span class="str">'CM'</span>,<span class="str">'Q'</span>,<span class="str">'LM1'</span>,<span class="str">'LM2'</span>),
+  form         <span class="kw">ENUM</span>(<span class="str">'pellets'</span>,<span class="str">'liquid'</span>,<span class="str">'powder'</span>,<span class="str">'mother_tincture'</span>,<span class="str">'trituration'</span>),
+  dosage       <span class="kw">VARCHAR</span>(<span class="num">60</span>),  <span class="cm">-- "4 pills" / "10 drops in water"</span>
+  frequency    <span class="kw">ENUM</span>(<span class="str">'OD'</span>,<span class="str">'BD'</span>,<span class="str">'TDS'</span>,<span class="str">'weekly'</span>,<span class="str">'monthly'</span>,<span class="str">'SOS'</span>),
+  duration_days <span class="kw">SMALLINT</span>,
+  instructions  <span class="kw">TEXT</span>,  <span class="cm">-- "Dissolve under tongue", "30 min before meals"</span>
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">KEY</span> idx_visit (visit_id),
+  <span class="kw">FOREIGN KEY</span> (visit_id)   <span class="kw">REFERENCES</span> visits(id),
+  <span class="kw">FOREIGN KEY</span> (remedy_id)  <span class="kw">REFERENCES</span> remedies(id),
+  <span class="kw">FOREIGN KEY</span> (patient_id) <span class="kw">REFERENCES</span> patients(id)
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: vitals (with thyroid + skin score)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> vitals (
+  id          <span class="kw">BIGINT UNSIGNED NOT NULL AUTO_INCREMENT</span>,
+  visit_id    <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  patient_id  <span class="kw">BIGINT UNSIGNED NOT NULL</span>,
+  bp_systolic  <span class="kw">SMALLINT UNSIGNED</span>,
+  bp_diastolic <span class="kw">SMALLINT UNSIGNED</span>,
+  blood_sugar  <span class="kw">DECIMAL</span>(<span class="num">5</span>,<span class="num">1</span>),
+  weight_kg    <span class="kw">DECIMAL</span>(<span class="num">5</span>,<span class="num">2</span>),
+  height_cm    <span class="kw">DECIMAL</span>(<span class="num">5</span>,<span class="num">1</span>),
+  bmi          <span class="kw">DECIMAL</span>(<span class="num">4</span>,<span class="num">1</span>) <span class="kw">GENERATED ALWAYS AS</span>
+               (weight_kg / ((height_cm/<span class="num">100</span>) * (height_cm/<span class="num">100</span>))) <span class="kw">STORED</span>,
+  temperature  <span class="kw">DECIMAL</span>(<span class="num">4</span>,<span class="num">1</span>),
+  spo2         <span class="kw">TINYINT UNSIGNED</span>,
+  pulse_rate   <span class="kw">SMALLINT UNSIGNED</span>,
+  <span class="cm">-- Thyroid panel (key condition at Dr. Feelgood's)</span>
+  tsh          <span class="kw">DECIMAL</span>(<span class="num">6</span>,<span class="num">3</span>),  <span class="cm">-- normal 0.4-4.0 mIU/L</span>
+  t3           <span class="kw">DECIMAL</span>(<span class="num">6</span>,<span class="num">2</span>),
+  t4           <span class="kw">DECIMAL</span>(<span class="num">6</span>,<span class="num">2</span>),
+  <span class="cm">-- Skin improvement score (psoriasis, eczema tracking)</span>
+  skin_score   <span class="kw">TINYINT UNSIGNED</span>,  <span class="cm">-- 1 (worst) to 10 (cleared)</span>
+  recorded_at  <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">KEY</span> idx_patient_vitals (patient_id, recorded_at),
+  <span class="kw">FOREIGN KEY</span> (visit_id)   <span class="kw">REFERENCES</span> visits(id),
+  <span class="kw">FOREIGN KEY</span> (patient_id) <span class="kw">REFERENCES</span> patients(id)
+) <span class="kw">ENGINE</span>=InnoDB;</pre></div>
+  </div>
+
+  <div class="sql-block">
+    <div class="sql-header"><span class="sql-title">-- TABLE: settings (replaces tenants table)</span></div>
+    <div class="sql-body"><pre><span class="kw">CREATE TABLE</span> settings (
+  `key`   <span class="kw">VARCHAR</span>(<span class="num">60</span>) <span class="kw">NOT NULL</span>,
+  `value` <span class="kw">TEXT</span>,
+  updated_at <span class="kw">TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (`key`)
+) <span class="kw">ENGINE</span>=InnoDB;
+
+<span class="cm">-- Seed with clinic data</span>
+<span class="kw">INSERT INTO</span> settings (`key`, `value`) <span class="kw">VALUES</span>
+(<span class="str">'clinic_name'</span>,       <span class="str">"Dr. Feelgood's Homeopathic Clinic"</span>),
+(<span class="str">'doctor_name'</span>,       <span class="str">'Dr. Mitesh Prajapati'</span>),
+(<span class="str">'clinic_phone'</span>,      <span class="str">'09727832228'</span>),
+(<span class="str">'clinic_phone2'</span>,     <span class="str">'9054552337'</span>),
+(<span class="str">'clinic_email'</span>,      <span class="str">'dr.feelgoods@gmail.com'</span>),
+(<span class="str">'clinic_address'</span>,    <span class="str">'6&7 2nd Floor A-Wing New SG Rd, opp Shukan Platinum, Gota, Ahmedabad 382481'</span>),
+(<span class="str">'app_url'</span>,           <span class="str">'https://app.drfeelgoods.in'</span>),
+(<span class="str">'uhid_prefix'</span>,       <span class="str">'DFG'</span>),
+(<span class="str">'consultation_fee'</span>,  <span class="str">'500'</span>),  <span class="cm">-- adjust as needed</span>
+(<span class="str">'slot_duration_min'</span>, <span class="str">'30'</span>),
+(<span class="str">'morning_start'</span>,     <span class="str">'09:30'</span>),
+(<span class="str">'morning_end'</span>,       <span class="str">'13:30'</span>),
+(<span class="str">'evening_start'</span>,     <span class="str">'16:30'</span>),
+(<span class="str">'evening_end'</span>,       <span class="str">'20:30'</span>),
+(<span class="str">'sunday_start'</span>,      <span class="str">'10:00'</span>),
+(<span class="str">'sunday_end'</span>,        <span class="str">'12:00'</span>),
+(<span class="str">'gst_number'</span>,        <span class="str">''</span>),
+(<span class="str">'invoice_prefix'</span>,    <span class="str">'DFG-INV'</span>);</pre></div>
+  </div>
+</div>
+
+<!-- ═══ ARCH ═══ -->
+<div id="arch" class="section">
+  <div class="clinic-strip" style="padding:14px 20px">
+    <div class="clinic-avatar" style="width:36px;height:36px;font-size:16px">🏗️</div>
+    <div><div style="font-size:14px;font-weight:600">app.drfeelgoods.in — System Architecture</div><div class="clinic-meta">PHP 8.2 MVC · MySQL 8 · No multi-tenancy · Single server deployment</div></div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#E6F1FB">
+      <div class="arch-layer-num" style="background:#378ADD;color:#fff">1</div>
+      <div class="arch-layer-title" style="color:#185FA5">Presentation — what users see</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">Staff App</div><div class="arch-comp-detail">app.drfeelgoods.in — Tailwind CSS + Alpine.js. Role-filtered sidebar. All clinic modules.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Patient Portal</div><div class="arch-comp-detail">app.drfeelgoods.in/portal — OTP login. View history, Rx, invoices, book appointment.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">QR Scanner</div><div class="arch-comp-detail">Mobile camera API. Scan QR → /qr/{token} → instant patient profile load.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Print views</div><div class="arch-comp-detail">Prescription PDF, Invoice PDF, QR patient card PDF — all server-rendered, branded.</div></div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#EEEDFE">
+      <div class="arch-layer-num" style="background:#7F77DD;color:#fff">2</div>
+      <div class="arch-layer-title" style="color:#534AB7">Application — PHP 8.2 MVC</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">Router</div><div class="arch-comp-detail">Custom PHP router. /api/* → JSON responses. /* → HTML views. Named routes.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Auth Middleware</div><div class="arch-comp-detail">JWT in HttpOnly cookie. Session fallback. OTP for patient portal.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">RBAC</div><div class="arch-comp-detail">4 roles: admin, receptionist, assistant, patient. Permission config array checked per route.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Controllers</div><div class="arch-comp-detail">PatientController, AppointmentController, VisitController, PrescriptionController, BillingController…</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Services</div><div class="arch-comp-detail">NotificationService, PdfService, QrService, RemedyService, BillingService</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">CSRF + Validation</div><div class="arch-comp-detail">CSRF token on every form. Server-side validation. Sanitize all inputs.</div></div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#FAEEDA">
+      <div class="arch-layer-num" style="background:#EF9F27;color:#fff">3</div>
+      <div class="arch-layer-title" style="color:#BA7517">Data — MySQL 8 + Redis</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">MySQL 8</div><div class="arch-comp-detail">18 tables. InnoDB. UTF8MB4. PDO prepared statements. No ORM bloat.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Redis (optional)</div><div class="arch-comp-detail">Session store. Dashboard stats cache (5 min TTL). Remedy search cache.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">File Storage</div><div class="arch-comp-detail">/storage/patients/{id}/ — photos, lab PDFs, generated prescriptions. Served via PHP (auth check).</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Settings table</div><div class="arch-comp-detail">Key-value store for all clinic config. Replaces .env for editable values. Admin UI to change.</div></div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#E1F5EE">
+      <div class="arch-layer-num" style="background:#1D9E75;color:#fff">4</div>
+      <div class="arch-layer-title" style="color:#0F6E56">Background workers — PHP cron</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">Notification worker</div><div class="arch-comp-detail">Cron every 5 min. Reads notifications table (queued). Sends WhatsApp/SMS. Marks sent/failed.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Reminder scheduler</div><div class="arch-comp-detail">Cron 8AM daily. Finds tomorrow's appointments → queues WhatsApp reminders.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Follow-up alerts</div><div class="arch-comp-detail">Cron daily. Patients with follow_up_date = tomorrow → WhatsApp reminder.</div></div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#FAECE7">
+      <div class="arch-layer-num" style="background:#D85A30;color:#fff">5</div>
+      <div class="arch-layer-title" style="color:#993C1D">External integrations</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">WhatsApp Business API</div><div class="arch-comp-detail">Meta Cloud API (free). Templates: appointment_reminder, prescription_ready, lab_report, diet_plan, follow_up_reminder.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Razorpay</div><div class="arch-comp-detail">UPI QR generation at billing desk. Webhook → marks invoice paid. No subscription module.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">mPDF</div><div class="arch-comp-detail">Prescription PDF (Dr. Feelgood's letterhead), GST Invoice PDF, QR patient card PDF, diet plan PDF.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">endroid/qr-code</div><div class="arch-comp-detail">Generates QR PNG for patient card. QR encodes app.drfeelgoods.in/qr/{token}</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">SMS (2Factor.in)</div><div class="arch-comp-detail">OTP for patient portal login. Fallback when WhatsApp fails.</div></div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-layer-head" style="background:#EAF3DE">
+      <div class="arch-layer-num" style="background:#639922;color:#fff">6</div>
+      <div class="arch-layer-title" style="color:#3B6D11">Deployment — single server</div>
+    </div>
+    <div class="arch-layer-body">
+      <div class="arch-comp"><div class="arch-comp-name">Server</div><div class="arch-comp-detail">Ubuntu 22.04 VPS (2GB RAM, 2 vCPU sufficient). Hostinger / DigitalOcean / Hetzner.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Nginx + PHP-FPM</div><div class="arch-comp-detail">Nginx serves static files. PHP-FPM handles app. app.drfeelgoods.in → /var/www/drfeelgoods</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">SSL</div><div class="arch-comp-detail">Let's Encrypt cert for app.drfeelgoods.in. Auto-renew via certbot.</div></div>
+      <div class="arch-comp"><div class="arch-comp-name">Backups</div><div class="arch-comp-detail">Daily mysqldump to /backups + sync to Google Drive or S3. 30-day retention.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ROADMAP ═══ -->
+<div id="roadmap" class="section">
+  <div class="clinic-strip" style="padding:14px 20px">
+    <div class="clinic-avatar" style="width:36px;height:36px;font-size:16px">🗺️</div>
+    <div><div style="font-size:14px;font-weight:600">Build Roadmap — app.drfeelgoods.in</div><div class="clinic-meta">8 phases · ~10 weeks · Faster than SaaS version (no multi-tenancy complexity)</div></div>
+  </div>
+
+  <div>
+    <div class="phase">
+      <div class="phase-header open" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#D85A30;color:#fff">1</div>
+        <div class="phase-info"><div class="phase-title">Foundation</div><div class="phase-sub">Project scaffold, DB, config, router</div></div>
+        <div class="phase-weeks" style="background:#FAECE7;color:#993C1D">Week 1</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible open"><div class="phase-body">
+        <div class="task-row"><span class="task-num">1.1</span><div class="task-main"><div class="task-title">Folder structure + Composer</div><div class="task-detail">/app (Controllers, Models, Services, Middleware), /public/index.php, /views, /config, /routes, /storage/patients</div><div class="task-tech"><span class="tech-tag">PHP 8.2</span><span class="tech-tag">Composer</span></div></div></div>
+        <div class="task-row"><span class="task-num">1.2</span><div class="task-main"><div class="task-title">MySQL schema + seed data</div><div class="task-detail">Run all 18 CREATE TABLE statements. Seed: settings table with clinic data, remedies table with 300+ common homeopathic remedies, 10 treatment plan templates for Dr. Feelgood's conditions.</div><div class="task-tech"><span class="tech-tag">MySQL 8</span></div></div></div>
+        <div class="task-row"><span class="task-num">1.3</span><div class="task-main"><div class="task-title">Config + router + middleware chain</div><div class="task-detail">.env for secrets (DB, Razorpay key, WhatsApp token). Settings from DB for clinic data. Custom router with groups: /admin, /api, /portal. Middleware: Auth, CSRF, RateLimit.</div><div class="task-tech"><span class="tech-tag">vlucas/phpdotenv</span></div></div></div>
+        <div class="task-row"><span class="task-num">1.4</span><div class="task-main"><div class="task-title">Nginx config for app.drfeelgoods.in</div><div class="task-detail">Point subdomain to /public. PHP-FPM pool. SSL via certbot. Gzip + static caching headers.</div><div class="task-tech"><span class="tech-tag">Nginx</span><span class="tech-tag">Let's Encrypt</span></div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#D85A30;color:#fff">2</div>
+        <div class="phase-info"><div class="phase-title">Auth + RBAC + Layout Shell</div><div class="phase-sub">Login, roles, sidebar, UI components</div></div>
+        <div class="phase-weeks" style="background:#FAECE7;color:#993C1D">Week 1–2</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">2.1</span><div class="task-main"><div class="task-title">Login / logout / remember me</div><div class="task-detail">bcrypt password. JWT in HttpOnly cookie. Brute force lockout (5 attempts → 15 min block). Admin can reset staff passwords.</div><div class="task-tech"><span class="tech-tag">JWT</span><span class="tech-tag">bcrypt</span></div></div></div>
+        <div class="task-row"><span class="task-num">2.2</span><div class="task-main"><div class="task-title">4-role RBAC</div><div class="task-detail">admin: all access. receptionist: patients, appointments, billing. assistant: vitals, lab uploads. patient: portal only. Permission array in config, checked in middleware.</div></div></div>
+        <div class="task-row"><span class="task-num">2.3</span><div class="task-main"><div class="task-title">Layout + component library</div><div class="task-detail">Sidebar (Dr. Feelgood's logo + green brand colour), topbar, content area. Alpine.js components: Modal, Toast, DataTable, Confirm dialog. Green (#1D9E75) as primary brand colour throughout.</div><div class="task-tech"><span class="tech-tag">Tailwind</span><span class="tech-tag">Alpine.js</span></div></div></div>
+        <div class="task-row"><span class="task-num">2.4</span><div class="task-main"><div class="task-title">Dashboard — today's stats</div><div class="task-detail">Patients today, pending appointments, revenue today, follow-ups due. Tiles + quick-action buttons. Data from simple DB queries (no Redis needed initially).</div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#EF9F27;color:#fff">3</div>
+        <div class="phase-info"><div class="phase-title">Patient Management</div><div class="phase-sub">3-step registration, UHID, QR card, search, before/after photos</div></div>
+        <div class="phase-weeks" style="background:#FAEEDA;color:#BA7517">Week 2–3</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">3.1</span><div class="task-main"><div class="task-title">3-step homeopathy registration</div><div class="task-detail">Step 1: Personal (name, DOB, gender, phone, photo). Step 2: Medical (blood group, veg type, allergies, chronic conditions). Step 3: Homeopathy profile (constitution type, thermal sensitivity, food cravings/aversions, mental state notes).</div><div class="task-tech"><span class="tech-tag">Alpine.js stepper</span></div></div></div>
+        <div class="task-row"><span class="task-num">3.2</span><div class="task-main"><div class="task-title">UHID (DFG-00001) + QR card</div><div class="task-detail">Auto-increment UHID with DFG prefix. Generate UUID qr_token on registration. QR PNG → embed in A6 card PDF with patient name, UHID, clinic branding. Print on first visit.</div><div class="task-tech"><span class="tech-tag">mPDF</span><span class="tech-tag">endroid/qr-code</span></div></div></div>
+        <div class="task-row"><span class="task-num">3.3</span><div class="task-main"><div class="task-title">Patient search + profile page</div><div class="task-detail">Live AJAX search by name/phone/UHID. Patient profile: tabs for Visits, Vitals charts, Prescriptions, Lab reports, Before/after photos, Invoices.</div></div></div>
+        <div class="task-row"><span class="task-num">3.4</span><div class="task-main"><div class="task-title">Before/after photo gallery</div><div class="task-detail">Upload photo per visit with type (before/after/progress) + condition label. Toggle is_public=1 to push to website gallery (webhook or API to WordPress). Timeline view per patient.</div><div class="task-tech"><span class="tech-tag">PHP file upload</span></div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#EF9F27;color:#fff">4</div>
+        <div class="phase-info"><div class="phase-title">Appointments + Queue</div><div class="phase-sub">Slot booking, walk-in, today's queue, reminders</div></div>
+        <div class="phase-weeks" style="background:#FAEEDA;color:#BA7517">Week 3–4</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">4.1</span><div class="task-main"><div class="task-title">Slot availability engine</div><div class="task-detail">Based on clinic hours in settings table. 30-min slots. Morning / Evening / Sunday sessions. Available slots = total slots − booked appointments for that date.</div><div class="task-tech"><span class="tech-tag">PHP</span><span class="tech-tag">MySQL</span></div></div></div>
+        <div class="task-row"><span class="task-num">4.2</span><div class="task-main"><div class="task-title">Booking + walk-in interface</div><div class="task-detail">Receptionist: select patient → date → slot → confirm. Walk-in: patient search (or quick register) → auto-assign next token number for current session.</div></div></div>
+        <div class="task-row"><span class="task-num">4.3</span><div class="task-main"><div class="task-title">Today's queue display</div><div class="task-detail">Real-time token list (auto-refresh every 30s via AJAX). Current patient highlighted. Status buttons: Mark arrived → In consultation → Completed. Doctor sees next patient name.</div></div></div>
+        <div class="task-row"><span class="task-num">4.4</span><div class="task-main"><div class="task-title">WhatsApp appointment reminder</div><div class="task-detail">Cron 8AM daily → find tomorrow's appointments → queue WhatsApp messages. Template: "Dear {name}, reminder for your appointment at Dr. Feelgood's tomorrow at {time}. Reply CANCEL to cancel."</div><div class="task-tech"><span class="tech-tag">Cron</span><span class="tech-tag">WhatsApp API</span></div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#1D9E75;color:#fff">5</div>
+        <div class="phase-info"><div class="phase-title">Clinical Visit + Homeopathic Prescription</div><div class="phase-sub">Case taking, remedy engine, antidote warnings, Rx PDF</div></div>
+        <div class="phase-weeks" style="background:#E1F5EE;color:#0F6E56">Week 4–6</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">5.1</span><div class="task-main"><div class="task-title">Visit screen with homeo case-taking tabs</div><div class="task-detail">Doctor opens patient from queue. Tabs: Chief Complaint | Case Taking (mental generals, physical generals, peculiar symptoms, modalities, miasmatic analysis) | Vitals | Prescription | Notes. Auto-saves visit on close.</div></div></div>
+        <div class="task-row"><span class="task-num">5.2</span><div class="task-main"><div class="task-title">Vitals entry + condition score</div><div class="task-detail">Quick form: BP, blood sugar, weight, temp, SpO2. Thyroid: TSH/T3/T4. Skin score: 1–10 slider with label (1=severe, 10=cleared). BMI auto-calculates. Charts load last 10 readings instantly.</div><div class="task-tech"><span class="tech-tag">Chart.js</span></div></div></div>
+        <div class="task-row"><span class="task-num">5.3</span><div class="task-main"><div class="task-title">Homeopathic remedy search + antidote warning</div><div class="task-detail">FULLTEXT search on remedies table. Type "Ars" → shows Arsenicum Album, Arsenicum Iodatum etc. On select: show dietary_restrictions in a yellow warning box. Show complementary remedies as suggestions.</div><div class="task-tech"><span class="tech-tag">MySQL FULLTEXT</span><span class="tech-tag">AJAX</span></div></div></div>
+        <div class="task-row"><span class="task-num">5.4</span><div class="task-main"><div class="task-title">Potency + form + dosage selector</div><div class="task-detail">Potency dropdown: 6C, 30C, 200C, 1M, 10M, CM, Q, LM1. Form: pellets, liquid, powder, mother tincture. Dosage text: "4 pills dissolved under tongue". Frequency: OD/BD/TDS/weekly/monthly/SOS.</div></div></div>
+        <div class="task-row"><span class="task-num">5.5</span><div class="task-main"><div class="task-title">Prescription PDF + WhatsApp</div><div class="task-detail">mPDF generates Rx with: Dr. Feelgood's logo, Dr. Mitesh Prajapati letterhead, patient details, remedy + potency + dosage, dietary restrictions section, follow-up date. Auto-send via WhatsApp on save.</div><div class="task-tech"><span class="tech-tag">mPDF</span><span class="tech-tag">WhatsApp API</span></div></div></div>
+        <div class="task-row"><span class="task-num">5.6</span><div class="task-main"><div class="task-title">Follow-up scheduling</div><div class="task-detail">Doctor sets follow_up_date on visit. System auto-creates appointment for that date. Patient gets WhatsApp reminder 1 day before follow-up.</div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#1D9E75;color:#fff">6</div>
+        <div class="phase-info"><div class="phase-title">Billing + Lab + Diet Plans</div><div class="phase-sub">UPI invoicing, lab reports, nutrition plan WhatsApp</div></div>
+        <div class="phase-weeks" style="background:#E1F5EE;color:#0F6E56">Week 6–7</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">6.1</span><div class="task-main"><div class="task-title">Auto-invoice from visit</div><div class="task-detail">On visit complete: draft invoice created with consultation fee (from settings). Receptionist adds medicine/lab charges. Edit line items. Apply discount. Preview → confirm → send.</div></div></div>
+        <div class="task-row"><span class="task-num">6.2</span><div class="task-main"><div class="task-title">UPI QR + Razorpay + PDF invoice</div><div class="task-detail">Razorpay order → UPI QR displayed. Webhook confirms → invoice marked paid. GST PDF generated with DFG-INV-0001 format, clinic GSTIN, Dr. Feelgood's letterhead.</div><div class="task-tech"><span class="tech-tag">Razorpay</span><span class="tech-tag">mPDF</span></div></div></div>
+        <div class="task-row"><span class="task-num">6.3</span><div class="task-main"><div class="task-title">Lab report upload + share</div><div class="task-detail">Upload patient lab PDF. Store in /storage/patients/{id}/labs/. Generate 24h secure share_token. WhatsApp link sent to patient. Thyroid values (TSH/T3/T4) manually entered → updates vitals chart.</div></div></div>
+        <div class="task-row"><span class="task-num">6.4</span><div class="task-main"><div class="task-title">Diet plan generator</div><div class="task-detail">Doctor selects condition (thyroid, skin, digestive, hormonal etc.) + reads patient veg_type from DB. Generates 7-day plan from template library. Shows remedy antidotes prominently. PDF → WhatsApp.</div><div class="task-tech"><span class="tech-tag">mPDF</span><span class="tech-tag">WhatsApp</span></div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#7F77DD;color:#fff">7</div>
+        <div class="phase-info"><div class="phase-title">Patient Portal</div><div class="phase-sub">OTP login, self-service history, appointment booking</div></div>
+        <div class="phase-weeks" style="background:#EEEDFE;color:#534AB7">Week 7–8</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">7.1</span><div class="task-main"><div class="task-title">OTP login for patients</div><div class="task-detail">app.drfeelgoods.in/portal — phone number → OTP via SMS (2Factor.in) → session. No password needed. Linked to patient record by phone number.</div><div class="task-tech"><span class="tech-tag">2Factor.in</span></div></div></div>
+        <div class="task-row"><span class="task-num">7.2</span><div class="task-main"><div class="task-title">Patient self-service</div><div class="task-detail">View visit history. Download prescriptions as PDF. View lab reports (shared links). Download invoices. See upcoming appointments. Book new appointment (available slots).</div></div></div>
+        <div class="task-row"><span class="task-num">7.3</span><div class="task-main"><div class="task-title">Online consultation booking</div><div class="task-detail">Patient selects "Online Consultation" type → books slot → admin/receptionist gets alert → confirms and sends Google Meet link via WhatsApp. Matches website's "online consultations available" promise.</div></div></div>
+      </div></div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-num" style="background:#378ADD;color:#fff">8</div>
+        <div class="phase-info"><div class="phase-title">Analytics, Polish & Launch</div><div class="phase-sub">Reports, audit log, backup, go-live checklist</div></div>
+        <div class="phase-weeks" style="background:#E6F1FB;color:#185FA5">Week 8–10</div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="collapsible"><div class="phase-body">
+        <div class="task-row"><span class="task-num">8.1</span><div class="task-main"><div class="task-title">Analytics dashboard</div><div class="task-detail">Patients per month chart. Revenue trend. Top 5 conditions treated. Appointment completion rate. Returning vs new patients. Thyroid + skin case improvement averages.</div><div class="task-tech"><span class="tech-tag">Chart.js</span></div></div></div>
+        <div class="task-row"><span class="task-num">8.2</span><div class="task-main"><div class="task-title">Audit log</div><div class="task-detail">Log all data changes: user_id, table, old/new values, IP, timestamp. Admin can filter and export. Especially important for prescription history.</div></div></div>
+        <div class="task-row"><span class="task-num">8.3</span><div class="task-main"><div class="task-title">Backup system</div><div class="task-detail">Daily mysqldump cron → compress → sync to Google Drive via rclone. 30-day retention. Alert admin on failure.</div><div class="task-tech"><span class="tech-tag">rclone</span><span class="tech-tag">mysqldump</span></div></div></div>
+        <div class="task-row"><span class="task-num">8.4</span><div class="task-main"><div class="task-title">Go-live checklist</div><div class="task-detail">SSL active. Default admin password changed. Clinic settings verified. WhatsApp templates approved (Meta takes 1–3 days). Razorpay test → live mode. Staff training session. Data migration if any paper records.</div></div></div>
+        <div class="task-row"><span class="task-num">8.5</span><div class="task-main"><div class="task-title">Admin settings panel</div><div class="task-detail">UI to edit settings table: clinic name, fees, hours, logo upload, Razorpay keys, WhatsApp token. No need to touch code for common changes.</div></div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+function togglePhase(h) {
+  const body = h.nextElementSibling;
+  h.classList.toggle('open');
+  body.classList.toggle('open');
+}
+</script>
