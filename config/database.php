@@ -5,13 +5,20 @@
  */
 
 class Database {
-    private $host = getenv('DB_HOST') ?: 'localhost';
-    private $db_name = getenv('DB_NAME') ?: 'silverwebbuzz_in_eclinicpro_home';
-    private $user = getenv('DB_USER') ?: 'silverwebbuzz_in_eclinicpro_home';
-    private $password = getenv('DB_PASSWORD') ?: '';
+    private $host;
+    private $db_name;
+    private $user;
+    private $password;
     private $charset = 'utf8mb4';
 
     private $conn;
+
+    public function __construct() {
+        $this->host = getenv('DB_HOST') ?: 'localhost';
+        $this->db_name = getenv('DB_NAME') ?: 'silverwebbuzz_in_eclinicpro_home';
+        $this->user = getenv('DB_USER') ?: 'silverwebbuzz_in_eclinicpro_home';
+        $this->password = getenv('DB_PASSWORD') ?: '';
+    }
 
     public function connect() {
         $this->conn = null;
