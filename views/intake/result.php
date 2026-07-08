@@ -40,7 +40,7 @@ $miasmColor = ['psora' => '#0f9d76', 'sycosis' => '#d97706', 'syphilis' => '#dc2
 <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
   <h1 class="page-title"><i class="fas fa-leaf"></i> Homeopathy Intake — Case Sheet</h1>
   <?php if (!empty($intake['patient_id'])): ?>
-    <a href="/patient/<?php echo (int)$intake['patient_id']; ?>" class="btn btn-secondary btn-sm"><i class="fas fa-user"></i> Patient Record</a>
+    <a href="/patient/<?php echo (int)$intake['patient_id']; ?>" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back to Patient</a>
   <?php endif; ?>
 </div>
 

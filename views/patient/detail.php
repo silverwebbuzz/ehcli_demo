@@ -398,6 +398,11 @@ $finishApptId = $apptId ?: (int)($activeAppt['id'] ?? 0);
         </div>
     </div>
     <div class="pt-header-actions">
+        <?php if (in_array($viewerRole, ['doctor','asst_doctor'], true)): ?>
+        <a href="/intake/patient/<?php echo (int)$p['id']; ?>" class="btn btn-success btn-sm" title="Homeopathy Intake Questionnaire">
+            <i class="fas fa-leaf"></i> Intake
+        </a>
+        <?php endif; ?>
         <a href="/patients" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
         <?php if ($viewerRole === 'doctor'): ?>
         <button class="btn btn-danger btn-sm" id="deletePatientBtn"
