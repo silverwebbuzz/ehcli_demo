@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Dr. Feelgood</title>
+    <title>Login - Homeopathy Clinic Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
      <link rel="manifest" href="/manifest.json">
@@ -143,7 +143,7 @@
             <div class="logo">
                 <img src="/assets/logo/app-logo.png" alt="Dr. Feelgood">
             </div>
-            <h1>Dr. Feelgood`s</h1>
+            <h1>Dr.Demo</h1>
             <p>Clinic Management System</p>
         </div>
 

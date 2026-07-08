@@ -31,8 +31,8 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <a href="<?php echo $isAsstDoctor ? '/queue' : '/dashboard'; ?>" class="app-brand">
-                    <img src="/assets/logo/app-logo.png" alt="Dr. Feelgood" class="app-brand-logo">
-                    <span>Dr. Feelgood</span>
+                    <img src="/assets/logo/app-logo.png" alt="Homeopathy Clinic Management" class="app-brand-logo">
+                    <span>Homeopathy Clinic Management</span>
                 </a>
             </div>
 
