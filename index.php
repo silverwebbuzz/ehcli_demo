@@ -103,6 +103,7 @@ use App\Controllers\MedicineController;
 use App\Controllers\AppointmentController;
 use App\Controllers\ReportController;
 use App\Controllers\IntakeController;
+use App\Controllers\ExpenseController;
 
 // Check session timeout
 AuthController::checkSessionTimeout();
@@ -600,6 +601,46 @@ switch ($route) {
         $reportData = $reportController->productivity($_GET);
         require __DIR__ . '/views/reports/productivity.php';
         break;
+
+    case 'reports/expenses':
+        AuthController::requireRole('doctor', 'asst_doctor');
+        $expenseController = new ExpenseController($db);
+        $reportData = $expenseController->report($_GET);
+        require __DIR__ . '/views/reports/expenses.php';
+        break;
+
+    // ── Clinic Expense Manager ──────────────────────────────────────────────
+
+    case 'expenses':
+        AuthController::requireRole('doctor');
+        $expenseController = new ExpenseController($db);
+        $expenses = $expenseController->listExpenses($_GET);
+        require __DIR__ . '/views/expenses/index.php';
+        break;
+
+    case 'api/expenses/create':
+        AuthController::requireRole('doctor');
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success'=>false]); exit; }
+        $expenseController = new ExpenseController($db);
+        echo json_encode($expenseController->save($_POST, $_SESSION['user_id'] ?? null));
+        exit;
+
+    case (preg_match('/^api\/expenses\/(\d+)\/update$/', $route, $matches) ? true : false):
+        AuthController::requireRole('doctor');
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success'=>false]); exit; }
+        $expenseController = new ExpenseController($db);
+        echo json_encode($expenseController->save($_POST, $_SESSION['user_id'] ?? null, (int)$matches[1]));
+        exit;
+
+    case (preg_match('/^api\/expenses\/(\d+)\/delete$/', $route, $matches) ? true : false):
+        AuthController::requireRole('doctor');
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success'=>false]); exit; }
+        $expenseController = new ExpenseController($db);
+        echo json_encode($expenseController->delete((int)$matches[1]));
+        exit;
 
     // ── Invoice (doctor + asst_doctor + reception) ────────────────────────────
     case (preg_match('/^invoice\/(\d+)$/', $route, $matches) ? true : false):
