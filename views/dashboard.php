@@ -362,10 +362,15 @@ $canRecordPay = in_array($_SESSION['role'] ?? 'doctor', ['reception', 'doctor', 
                         echo ($dor && $dor !== '0000-00-00') ? date('d M Y', strtotime($dor)) : '—';
                         ?>
                     </td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         <a href="/patient/<?php echo $p['id']; ?>" class="btn btn-primary btn-sm">
                             <i class="fas fa-eye"></i>
                         </a>
+                        <?php if (in_array($_SESSION['role'] ?? 'doctor', ['doctor','asst_doctor'])): ?>
+                        <a href="/intake/patient/<?php echo $p['id']; ?>" class="btn btn-outline-primary btn-sm" title="Homeopathy Intake Questionnaire">
+                            <i class="fas fa-leaf"></i>
+                        </a>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

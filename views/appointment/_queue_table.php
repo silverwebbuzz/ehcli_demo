@@ -237,6 +237,12 @@ $nowDate     = date('Y-m-d');
                     <span style="color:#9ca3af;font-size:11px;"><?php echo htmlspecialchars(ucfirst(str_replace('_',' ',$s))); ?></span>
                 <?php endif; ?>
 
+                <?php if ($pid && $qCanConsult && $s !== 'cancelled'): ?>
+                    <a href="/intake/patient/<?php echo $pid; ?>" class="btn btn-outline-primary btn-sm" title="Homeopathy Intake Questionnaire">
+                        <i class="fas fa-leaf"></i><?php echo $compact ? '' : ' Intake'; ?>
+                    </a>
+                <?php endif; ?>
+
             </td>
         </tr>
     <?php endforeach; ?>

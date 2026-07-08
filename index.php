@@ -102,6 +102,7 @@ use App\Controllers\PatientController;
 use App\Controllers\MedicineController;
 use App\Controllers\AppointmentController;
 use App\Controllers\ReportController;
+use App\Controllers\IntakeController;
 
 // Check session timeout
 AuthController::checkSessionTimeout();
@@ -617,6 +618,62 @@ switch ($route) {
         $settingModel = new App\Models\Setting($db);
         $s = $settingModel->getAllSettings();
         require __DIR__ . '/views/invoice.php';
+        break;
+
+    // ── Homeopathy Intake Questionnaire ─────────────────────────────────────
+
+    // Staff: create/reuse a shareable intake link for a patient → returns URL.
+    case (preg_match('/^api\/intake\/(\d+)\/create$/', $route, $matches) ? true : false):
+        AuthController::requireRole('doctor', 'asst_doctor');
+        header('Content-Type: application/json');
+        $intakeController = new IntakeController($db);
+        echo json_encode($intakeController->createLink((int)$matches[1], $_SESSION['user_id'] ?? null));
+        exit;
+
+    // Staff: fill the questionnaire in-clinic for a patient (opens the tabbed form).
+    case (preg_match('/^intake\/patient\/(\d+)$/', $route, $matches) ? true : false):
+        AuthController::requireRole('doctor', 'asst_doctor');
+        $patientId = (int)$matches[1];
+        $intakeController = new IntakeController($db);
+        // Already submitted? Send staff straight to the scored case sheet.
+        $latest = $intakeController->latestForPatient($patientId);
+        if ($latest && in_array($latest['status'], ['submitted', 'locked'], true)) {
+            header('Location: /intake/' . (int)$latest['id'] . '/result');
+            exit;
+        }
+        $link = $intakeController->createLink($patientId, $_SESSION['user_id'] ?? null);
+        // Load it as the "public" fill page but inside the staff session.
+        [$intake, $intakeError] = $intakeController->loadPublic($link['token'] ?? '');
+        $shareUrl  = $link['url'] ?? '';
+        $staffFill = true;
+        require __DIR__ . '/views/intake/public.php';
+        break;
+
+    // Staff: view the scored case sheet / result for a submitted intake.
+    case (preg_match('/^intake\/(\d+)\/result$/', $route, $matches) ? true : false):
+        AuthController::requireRole('doctor', 'asst_doctor');
+        $intakeController = new IntakeController($db);
+        $intake = $intakeController->getResult((int)$matches[1]);
+        if (!$intake) {
+            http_response_code(404);
+            require __DIR__ . '/views/error/404.php';
+            break;
+        }
+        require __DIR__ . '/views/intake/result.php';
+        break;
+
+    // Public (NO login): patient fills the questionnaire via tokenized link.
+    case (preg_match('#^api/intake/([a-f0-9]{40})/submit$#', $route, $matches) ? true : false):
+        header('Content-Type: application/json');
+        $intakeController = new IntakeController($db);
+        echo json_encode($intakeController->submitPublic($matches[1], $_POST));
+        exit;
+
+    case (preg_match('#^intake/([a-f0-9]{40})$#', $route, $matches) ? true : false):
+        $intakeController = new IntakeController($db);
+        [$intake, $intakeError] = $intakeController->loadPublic($matches[1]);
+        $staffFill = false;
+        require __DIR__ . '/views/intake/public.php';
         break;
 
     default:

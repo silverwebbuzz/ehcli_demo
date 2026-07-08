@@ -125,6 +125,11 @@ class AuthController {
             '#^api/report/\d+/update$#',       // Edit visit report
             '#^api/report/\d+/payment$#',      // Record payment
             '#^invoice/\d+$#',                 // Print invoice
+            '#^intake/patient/\d+$#',          // Fill homeopathy intake in-clinic
+            '#^intake/\d+/result$#',           // View intake case sheet / score
+            '#^api/intake/\d+/create$#',       // Generate patient intake link
+            '#^intake/[a-f0-9]{40}$#',         // Open a tokenized intake link
+            '#^api/intake/[a-f0-9]{40}/submit$#', // Submit tokenized intake
         ];
         foreach ($allowed as $pattern) {
             if (preg_match($pattern, $route)) return;
