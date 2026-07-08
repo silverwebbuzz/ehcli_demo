@@ -238,7 +238,7 @@ $nowDate     = date('Y-m-d');
                 <?php endif; ?>
 
                 <?php if ($pid && $qCanConsult && $s !== 'cancelled'): ?>
-                    <a href="/intake/patient/<?php echo $pid; ?>" class="btn btn-outline-primary btn-sm" title="Homeopathy Intake Questionnaire">
+                    <a href="/intake/patient/<?php echo $pid; ?>" class="btn btn-success btn-sm" title="Homeopathy Intake Questionnaire">
                         <i class="fas fa-leaf"></i><?php echo $compact ? '' : ' Intake'; ?>
                     </a>
                 <?php endif; ?>

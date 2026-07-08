@@ -399,6 +399,12 @@ $multiDay = ($view !== 'today');
 
                     <?php endif; ?>
 
+                    <?php if ($pid && $qCanConsult && $s !== 'cancelled'): ?>
+                    <a href="/intake/patient/<?php echo $pid; ?>" class="btn btn-success btn-sm" title="Homeopathy Intake Questionnaire">
+                        <i class="fas fa-leaf"></i> Intake
+                    </a>
+                    <?php endif; ?>
+
                 </td>
             </tr>
             <?php endforeach; ?>
