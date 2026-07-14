@@ -22,6 +22,17 @@ $tabs = array_values(array_filter($schema['tabs'], function ($t) use ($showFemal
     return true;
 }));
 
+// Hindi text for an option/field, falling back to the English label.
+function intakeHi(array $x): string {
+    return htmlspecialchars($x['label_hi'] ?? $x['label'] ?? '');
+}
+
+// A <span> that carries both languages; JS swaps textContent on toggle.
+function intakeLangSpan(array $x): string {
+    return '<span data-en="' . htmlspecialchars($x['label']) . '" data-hi="' . intakeHi($x) . '">'
+        . htmlspecialchars($x['label']) . '</span>';
+}
+
 function fieldInput(array $f): string {
     $name = htmlspecialchars($f['name']);
     $req  = !empty($f['required']) ? 'required' : '';
@@ -31,9 +42,10 @@ function fieldInput(array $f): string {
         case 'text':
             return "<input type=\"text\" name=\"{$name}\" {$req}>";
         case 'select':
-            $h = "<select name=\"{$name}\" {$req}><option value=\"\">— select —</option>";
+            $h = "<select name=\"{$name}\" {$req}><option value=\"\" data-en=\"— select —\" data-hi=\"— चुनें —\">— select —</option>";
             foreach ($f['options'] as $o) {
-                $h .= '<option value="' . htmlspecialchars($o['value']) . '">' . htmlspecialchars($o['label']) . '</option>';
+                $h .= '<option value="' . htmlspecialchars($o['value']) . '" data-en="' . htmlspecialchars($o['label'])
+                    . '" data-hi="' . intakeHi($o) . '">' . htmlspecialchars($o['label']) . '</option>';
             }
             return $h . '</select>';
         case 'radio':
@@ -41,7 +53,7 @@ function fieldInput(array $f): string {
             foreach ($f['options'] as $i => $o) {
                 $id = $name . '_' . $i;
                 $h .= '<label class="opt" for="' . $id . '"><input type="radio" id="' . $id . '" name="' . $name . '" value="'
-                    . htmlspecialchars($o['value']) . '" ' . $req . '><span>' . htmlspecialchars($o['label']) . '</span></label>';
+                    . htmlspecialchars($o['value']) . '" ' . $req . '>' . intakeLangSpan($o) . '</label>';
             }
             return $h . '</div>';
         case 'checkbox':
@@ -49,7 +61,7 @@ function fieldInput(array $f): string {
             foreach ($f['options'] as $i => $o) {
                 $id = $name . '_' . $i;
                 $h .= '<label class="opt" for="' . $id . '"><input type="checkbox" id="' . $id . '" name="' . $name . '[]" value="'
-                    . htmlspecialchars($o['value']) . '"><span>' . htmlspecialchars($o['label']) . '</span></label>';
+                    . htmlspecialchars($o['value']) . '">' . intakeLangSpan($o) . '</label>';
             }
             return $h . '</div>';
     }
@@ -69,9 +81,12 @@ function fieldInput(array $f): string {
   body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:#f3f4f6; }
   .wrap { max-width:760px; margin:0 auto; padding:16px; }
   .card { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.05); }
-  .top { background:linear-gradient(135deg,var(--green),var(--green-d)); color:#fff; padding:22px 20px; text-align:center; }
+  .top { position:relative; background:linear-gradient(135deg,var(--green),var(--green-d)); color:#fff; padding:22px 20px; text-align:center; }
   .top h1 { margin:0; font-size:1.35rem; }
   .top p { margin:6px 0 0; opacity:.9; font-size:.9rem; }
+  .langbar { position:absolute; top:10px; right:10px; display:flex; gap:0; background:rgba(255,255,255,.18); border-radius:8px; padding:2px; }
+  .lang { border:none; background:transparent; color:#fff; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:.8rem; font-weight:600; font-family:inherit; }
+  .lang.active { background:#fff; color:var(--green-d); }
   .staff-note { background:#fffbeb; color:#92400e; border-bottom:1px solid #fde68a; padding:8px 16px; font-size:.85rem; text-align:center; }
   .tabs { display:flex; gap:6px; overflow-x:auto; padding:12px 12px 0; border-bottom:1px solid var(--line); background:#fafafa; -webkit-overflow-scrolling:touch; }
   .tab { flex:0 0 auto; border:1px solid var(--line); border-bottom:none; background:#fff; color:var(--muted);
@@ -109,7 +124,11 @@ function fieldInput(array $f): string {
 <div class="wrap">
   <div class="card">
     <div class="top">
-      <h1><i class="fas fa-leaf"></i> Homeopathy Intake Questionnaire</h1>
+      <div class="langbar">
+        <button type="button" class="lang" data-lang="en">English</button>
+        <button type="button" class="lang" data-lang="hi">हिंदी</button>
+      </div>
+      <h1><i class="fas fa-leaf"></i> <span data-en="Homeopathy Intake Questionnaire" data-hi="होम्योपैथी इनटेक प्रश्नावली">Homeopathy Intake Questionnaire</span></h1>
       <p>Dr. Feelgood's Clinic Management</p>
     </div>
 
@@ -132,7 +151,7 @@ function fieldInput(array $f): string {
 
     <div id="thanks" class="msg ok" style="display:none;">
       <i class="fas fa-circle-check"></i>
-      <p style="font-size:1.1rem;margin:0;">Thank you! Your responses have been submitted.</p>
+      <p style="font-size:1.1rem;margin:0;" data-en="Thank you! Your responses have been submitted." data-hi="धन्यवाद! आपके उत्तर जमा कर दिए गए हैं।">Thank you! Your responses have been submitted.</p>
     </div>
 
     <form id="intakeForm" data-token="<?php echo htmlspecialchars($token); ?>">
@@ -140,7 +159,7 @@ function fieldInput(array $f): string {
       <div class="tabs" id="tabs">
         <?php foreach ($tabs as $i => $t): ?>
           <button type="button" class="tab <?php echo $i === 0 ? 'active' : ''; ?>" data-i="<?php echo $i; ?>">
-            <i class="fas <?php echo htmlspecialchars($t['icon']); ?>"></i><?php echo htmlspecialchars($t['label']); ?>
+            <i class="fas <?php echo htmlspecialchars($t['icon']); ?>"></i><?php echo intakeLangSpan($t); ?>
           </button>
         <?php endforeach; ?>
       </div>
@@ -150,11 +169,13 @@ function fieldInput(array $f): string {
       <?php foreach ($tabs as $i => $t): ?>
         <div class="panel <?php echo $i === 0 ? 'active' : ''; ?>" data-i="<?php echo $i; ?>">
           <?php if (!empty($name) && $i === 0): ?>
-            <p style="margin:0 0 16px;color:var(--muted);">Hello <strong><?php echo htmlspecialchars($name); ?></strong>, please answer as best you can. There are no wrong answers.</p>
+            <p style="margin:0 0 16px;color:var(--muted);">
+              <span data-en="Hello" data-hi="नमस्ते">Hello</span> <strong><?php echo htmlspecialchars($name); ?></strong><span data-en=", please answer as best you can. There are no wrong answers." data-hi=", कृपया यथासंभव उत्तर दें। कोई उत्तर गलत नहीं है।">, please answer as best you can. There are no wrong answers.</span>
+            </p>
           <?php endif; ?>
           <?php foreach ($t['fields'] as $f): ?>
             <div class="field">
-              <label class="q"><?php echo htmlspecialchars($f['label']); ?><?php echo !empty($f['required']) ? ' <span class="req">*</span>' : ''; ?></label>
+              <label class="q"><?php echo intakeLangSpan($f); ?><?php echo !empty($f['required']) ? ' <span class="req">*</span>' : ''; ?></label>
               <?php echo fieldInput($f); ?>
             </div>
           <?php endforeach; ?>
@@ -162,9 +183,9 @@ function fieldInput(array $f): string {
       <?php endforeach; ?>
 
       <div class="nav">
-        <button type="button" class="btn btn-ghost" id="prevBtn" style="visibility:hidden;"><i class="fas fa-arrow-left"></i> Back</button>
-        <button type="button" class="btn btn-primary" id="nextBtn">Next <i class="fas fa-arrow-right"></i></button>
-        <button type="submit" class="btn btn-primary" id="submitBtn" style="display:none;"><i class="fas fa-paper-plane"></i> Submit</button>
+        <button type="button" class="btn btn-ghost" id="prevBtn" style="visibility:hidden;"><i class="fas fa-arrow-left"></i> <span data-en="Back" data-hi="पीछे">Back</span></button>
+        <button type="button" class="btn btn-primary" id="nextBtn"><span data-en="Next" data-hi="आगे">Next</span> <i class="fas fa-arrow-right"></i></button>
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="display:none;"><i class="fas fa-paper-plane"></i> <span data-en="Submit" data-hi="जमा करें">Submit</span></button>
       </div>
     </form>
 <?php endif; ?>
@@ -173,6 +194,26 @@ function fieldInput(array $f): string {
 
 <script>
 (function () {
+  // ── Language toggle (English default / Hindi) ────────────────────
+  var langEls = Array.prototype.slice.call(document.querySelectorAll('[data-en]'));
+  var langBtns = Array.prototype.slice.call(document.querySelectorAll('.lang'));
+  function applyLang(lang) {
+    if (lang !== 'hi') lang = 'en';
+    langEls.forEach(function (el) {
+      var v = el.getAttribute('data-' + lang);
+      if (v !== null) el.textContent = v;
+    });
+    langBtns.forEach(function (b) { b.classList.toggle('active', b.dataset.lang === lang); });
+    document.documentElement.setAttribute('lang', lang);
+    try { localStorage.setItem('intakeLang', lang); } catch (e) {}
+  }
+  langBtns.forEach(function (b) {
+    b.addEventListener('click', function () { applyLang(b.dataset.lang); });
+  });
+  var saved = 'en';
+  try { saved = localStorage.getItem('intakeLang') || 'en'; } catch (e) {}
+  applyLang(saved);
+
   var copyBtn = document.getElementById('copyLinkBtn');
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
