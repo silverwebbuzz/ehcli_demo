@@ -582,6 +582,13 @@ switch ($route) {
         require __DIR__ . '/views/reports/patients.php';
         break;
 
+    case 'reports/gst':
+        AuthController::requireRole('doctor', 'asst_doctor');
+        $reportController = new ReportController($db);
+        $reportData = $reportController->gst($_GET);
+        require __DIR__ . '/views/reports/gst.php';
+        break;
+
     case 'reports/queue':
         AuthController::requireRole('doctor', 'asst_doctor');
         $reportController = new ReportController($db);

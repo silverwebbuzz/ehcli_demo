@@ -96,6 +96,116 @@ class Report extends BaseModel {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // GST
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /** Cached check for the optional apply_gst column (added 2026-07-15). */
+    private static $hasApplyGstCol = null;
+
+    private function hasApplyGst(): bool {
+        if (self::$hasApplyGstCol === null) {
+            try {
+                $stmt = $this->query("SHOW COLUMNS FROM {$this->table} LIKE 'apply_gst'");
+                self::$hasApplyGstCol = $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
+            } catch (\Exception $e) {
+                self::$hasApplyGstCol = false;
+            }
+        }
+        return self::$hasApplyGstCol;
+    }
+
+    /**
+     * SQL fragment selecting the visits that carry GST.
+     *   - When the per-visit apply_gst column exists, an explicit 1 always counts;
+     *     a NULL (no per-visit choice) follows the clinic default.
+     *   - Without the column, every visit follows the clinic default.
+     * $settingOn is the clinic-wide GST setting (inv_gst_enabled). Baked in as a
+     * controlled boolean literal — never user input — so it's injection-safe.
+     */
+    private function gstApplicableCond(bool $settingOn): string {
+        if ($this->hasApplyGst()) {
+            return $settingOn ? '(apply_gst = 1 OR apply_gst IS NULL)' : '(apply_gst = 1)';
+        }
+        return $settingOn ? '(1=1)' : '(1=0)';
+    }
+
+    /** Totals: taxable base, GST amount, and gross for a date range. */
+    public function gstSummary(string $from, string $to, float $rate, bool $settingOn): array {
+        $cond = $this->gstApplicableCond($settingOn);
+        $sql = "SELECT
+                    COUNT(*) as visits,
+                    COALESCE(SUM(amt), 0) as base,
+                    ROUND(COALESCE(SUM(amt), 0) * ? / 100, 2) as gst
+                FROM {$this->table}
+                WHERE date BETWEEN ? AND ? AND amt > 0 AND {$cond}";
+        $stmt = $this->query($sql, [$rate, $from, $to]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row['gross'] = (float)$row['base'] + (float)$row['gst'];
+        return $row;
+    }
+
+    /** Daily GST breakdown within a range. */
+    public function gstByDay(string $from, string $to, float $rate, bool $settingOn): array {
+        $cond = $this->gstApplicableCond($settingOn);
+        $sql = "SELECT
+                    date as day,
+                    COALESCE(SUM(amt), 0) as base,
+                    ROUND(COALESCE(SUM(amt), 0) * ? / 100, 2) as gst,
+                    COUNT(*) as visits
+                FROM {$this->table}
+                WHERE date BETWEEN ? AND ? AND amt > 0 AND {$cond}
+                GROUP BY date
+                ORDER BY date ASC";
+        return $this->query($sql, [$rate, $from, $to])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Weekly GST breakdown within a range. */
+    public function gstByWeek(string $from, string $to, float $rate, bool $settingOn): array {
+        $cond = $this->gstApplicableCond($settingOn);
+        $sql = "SELECT
+                    YEARWEEK(date, 1) as yw,
+                    MIN(date) as week_start,
+                    COALESCE(SUM(amt), 0) as base,
+                    ROUND(COALESCE(SUM(amt), 0) * ? / 100, 2) as gst,
+                    COUNT(*) as visits
+                FROM {$this->table}
+                WHERE date BETWEEN ? AND ? AND amt > 0 AND {$cond}
+                GROUP BY YEARWEEK(date, 1)
+                ORDER BY yw ASC";
+        return $this->query($sql, [$rate, $from, $to])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Monthly GST breakdown for a year. */
+    public function gstByMonth(int $year, float $rate, bool $settingOn): array {
+        $cond = $this->gstApplicableCond($settingOn);
+        $sql = "SELECT
+                    DATE_FORMAT(date, '%Y-%m') as month,
+                    COALESCE(SUM(amt), 0) as base,
+                    ROUND(COALESCE(SUM(amt), 0) * ? / 100, 2) as gst,
+                    COUNT(*) as visits
+                FROM {$this->table}
+                WHERE YEAR(date) = ? AND amt > 0 AND {$cond}
+                GROUP BY DATE_FORMAT(date, '%Y-%m')
+                ORDER BY month ASC";
+        return $this->query($sql, [$rate, $year])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Per-visit GST line items for a range — used for the filing/detail table. */
+    public function gstDetail(string $from, string $to, float $rate, bool $settingOn): array {
+        $cond = $this->gstApplicableCond($settingOn);
+        $sql = "SELECT
+                    pr.id, pr.date, pr.amt as base,
+                    ROUND(pr.amt * ? / 100, 2) as gst,
+                    pr.payment_type, pr.payment_status,
+                    p.patient_id, CONCAT(p.fname, ' ', p.lname) as patient_name
+                FROM {$this->table} pr
+                JOIN patient p ON pr.p_id = p.id
+                WHERE pr.date BETWEEN ? AND ? AND pr.amt > 0 AND {$cond}
+                ORDER BY pr.date DESC, pr.id DESC";
+        return $this->query($sql, [$rate, $from, $to])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // PATIENT ANALYTICS
     // ══════════════════════════════════════════════════════════════════════════
 

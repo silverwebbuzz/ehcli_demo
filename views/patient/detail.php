@@ -40,10 +40,17 @@ function fmtName($f, $l) {
     $canVisit   = in_array($viewerRole, ['doctor', 'asst_doctor']);
     // Reception may edit patient demographics/information, but NOT visits or history.
     $canEditInfo = in_array($viewerRole, ['doctor', 'asst_doctor', 'reception']);
-    // GST settings — when enabled, the visit page shows a GST breakdown on top of
-    // the entered amount (which stays the pre-tax base, same as the invoice).
+    // GST settings — when enabled in settings, the visit page shows a GST toggle +
+    // breakdown on top of the entered amount (which stays the pre-tax base, same as
+    // the invoice). The per-visit toggle can override the clinic default.
     $gstEnabled = (($clinicSettings['inv_gst_enabled'] ?? '0') === '1');
-    $gstRate    = $gstEnabled ? (float)($clinicSettings['inv_gst_rate'] ?? 18) : 0;
+    $gstRate    = (float)($clinicSettings['inv_gst_rate'] ?? 18);
+    // Default toggle state: an explicit per-visit choice on today's report wins;
+    // otherwise fall back to the clinic-wide GST setting.
+    $gstApplied = $gstEnabled;
+    if ($todayReport !== null && isset($todayReport['apply_gst']) && $todayReport['apply_gst'] !== null && $todayReport['apply_gst'] !== '') {
+        $gstApplied = ((string)$todayReport['apply_gst'] === '1');
+    }
 ?>
 
 <style>
@@ -730,8 +737,16 @@ $finishApptId = $apptId ?: (int)($activeAppt['id'] ?? 0);
 
             <!-- Amount + Payment (bottom, grouped) -->
             <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;margin-bottom:14px;">
-                <div class="info-label" style="margin-bottom:8px;color:var(--gray-500);font-weight:700;">
-                    <i class="fas fa-rupee-sign" style="color:var(--primary);"></i> Payment
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <div class="info-label" style="color:var(--gray-500);font-weight:700;">
+                        <i class="fas fa-rupee-sign" style="color:var(--primary);"></i> Payment
+                    </div>
+                    <?php if ($gstEnabled): ?>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-600);cursor:pointer;user-select:none;">
+                        <input type="checkbox" id="reportApplyGst" <?php echo $gstApplied ? 'checked' : ''; ?>>
+                        Add GST (<?php echo $gstRate; ?>%)
+                    </label>
+                    <?php endif; ?>
                 </div>
                 <div class="visit-pay-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
                     <div>
@@ -760,7 +775,7 @@ $finishApptId = $apptId ?: (int)($activeAppt['id'] ?? 0);
                 <?php if ($gstEnabled): ?>
                 <!-- GST breakdown — Amount above is the pre-tax base; GST is added here and on the invoice. -->
                 <div id="gstBreakdown" data-gst-rate="<?php echo htmlspecialchars($gstRate); ?>"
-                     style="margin-top:10px;border-top:1px dashed var(--gray-300);padding-top:8px;font-size:13px;">
+                     style="margin-top:10px;border-top:1px dashed var(--gray-300);padding-top:8px;font-size:13px;<?php echo $gstApplied ? '' : 'display:none;'; ?>">
                     <div style="display:flex;justify-content:space-between;color:var(--gray-500);margin-bottom:3px;">
                         <span>Subtotal</span><span>₹<span id="gstSubtotal">0</span></span>
                     </div>
@@ -1116,13 +1131,18 @@ MedRows.seed(<?php echo json_encode($seedRows ?? []); ?>);
 (function () {
     const box = document.getElementById('gstBreakdown');
     if (!box) return;
-    const rate   = parseFloat(box.getAttribute('data-gst-rate')) || 0;
-    const amtEl  = document.getElementById('reportAmt');
-    const subEl  = document.getElementById('gstSubtotal');
-    const gstEl  = document.getElementById('gstAmount');
-    const totEl  = document.getElementById('gstTotal');
-    const money  = (n) => Number.isInteger(n) ? n : n.toFixed(2);
+    const rate    = parseFloat(box.getAttribute('data-gst-rate')) || 0;
+    const amtEl   = document.getElementById('reportAmt');
+    const subEl   = document.getElementById('gstSubtotal');
+    const gstEl   = document.getElementById('gstAmount');
+    const totEl   = document.getElementById('gstTotal');
+    const toggle  = document.getElementById('reportApplyGst');
+    const money   = (n) => Number.isInteger(n) ? n : n.toFixed(2);
+    window.gstApplied = () => toggle ? toggle.checked : false;
     window.updateGstBreakdown = function () {
+        const on = window.gstApplied();
+        box.style.display = on ? '' : 'none';
+        if (!on) return;
         const base = parseFloat(amtEl.value) || 0;
         const gst  = Math.round(base * rate) / 100;
         subEl.textContent = money(base);
@@ -1130,8 +1150,9 @@ MedRows.seed(<?php echo json_encode($seedRows ?? []); ?>);
         totEl.textContent = money(base + gst);
     };
     // MedRows.sync() sets amtEl.value programmatically (no input event), so also
-    // hook into manual edits and refresh once on load.
+    // hook into manual edits, the GST toggle, and refresh once on load.
     amtEl.addEventListener('input', window.updateGstBreakdown);
+    if (toggle) toggle.addEventListener('change', window.updateGstBreakdown);
     window.updateGstBreakdown();
 })();
 <?php endif; ?>
@@ -1309,6 +1330,9 @@ function collectReportData(patientId) {
         amt:            document.getElementById('reportAmt').value || 0,
         payment_type:   document.getElementById('reportPaymentType').value,
         payment_status: document.getElementById('reportPaymentStatus').value,
+        apply_gst:      document.getElementById('reportApplyGst')
+                            ? (document.getElementById('reportApplyGst').checked ? '1' : '0')
+                            : '',
     };
 }
 

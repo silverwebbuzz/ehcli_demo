@@ -41,8 +41,13 @@ $payType    = ($report['payment_type'] ?? 'cash') === 'online' ? 'Online' : 'Cas
 $isPaid     = ($report['payment_status'] ?? 'paid') !== 'remaining';
 $payLabel   = $isPaid ? 'PAID' : 'PAYMENT DUE';
 
-// GST
-$gstEnabled = ($s['inv_gst_enabled'] ?? '0') === '1';
+// GST — the clinic setting is the default, but an explicit per-visit choice
+// (apply_gst on the report) overrides it so the invoice matches the visit page.
+$gstSettingOn = ($s['inv_gst_enabled'] ?? '0') === '1';
+$perVisitGst  = $report['apply_gst'] ?? null;
+$gstEnabled   = ($perVisitGst === null || $perVisitGst === '')
+                    ? $gstSettingOn
+                    : ((string)$perVisitGst === '1');
 $gstRate    = $gstEnabled ? (float)($s['inv_gst_rate'] ?? 18) : 0;
 $gstAmt     = $gstEnabled ? round($baseAmt * $gstRate / 100, 2) : 0;
 $totalAmt   = $baseAmt + $gstAmt;

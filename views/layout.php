@@ -98,6 +98,7 @@
                             <ul class="submenu">
                                 <li><a href="/reports/patients"     class="<?php echo strpos($uri,'/reports/patients')!==false?'active':''; ?>"><i class="fas fa-users"></i> Patients</a></li>
                                 <li><a href="/reports/expenses"     class="<?php echo strpos($uri,'/reports/expenses')!==false?'active':''; ?>"><i class="fas fa-wallet"></i> Expenses</a></li>
+                                <li><a href="/reports/gst"          class="<?php echo strpos($uri,'/reports/gst')!==false?'active':''; ?>"><i class="fas fa-file-invoice-dollar"></i> GST</a></li>
                                 <!--li><a href="/reports/income"       class="<?php echo strpos($uri,'/reports/income')!==false?'active':''; ?>"><i class="fas fa-rupee-sign"></i> Income</a></li>
                                 <li><a href="/reports/queue"        class="<?php echo strpos($uri,'/reports/queue')!==false?'active':''; ?>"><i class="fas fa-list-ol"></i> Queue / Ops</a></li>
                                 <li><a href="/reports/medicines"    class="<?php echo strpos($uri,'/reports/medicines')!==false?'active':''; ?>"><i class="fas fa-pills"></i> Medicines</a></li>

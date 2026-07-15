@@ -17,6 +17,9 @@ class ProgressReport extends BaseModel {
     /** Cached check for the optional client_uuid column (added 2026-07-01). */
     private static $hasUuidCol = null;
 
+    /** Cached check for the optional apply_gst column (added 2026-07-15). */
+    private static $hasApplyGstCol = null;
+
     /**
      * Whether the offline-sync idempotency column exists. Lets the app keep
      * working on databases where the migration hasn't been applied yet.
@@ -60,9 +63,28 @@ class ProgressReport extends BaseModel {
         return self::$hasDetailsCol;
     }
 
-    /** Column list for SELECTs, including medicine_details only when present. */
+    /**
+     * Whether the per-visit GST override column exists. Lets the app keep
+     * working on databases where the migration hasn't been applied yet.
+     */
+    public function hasApplyGst(): bool {
+        if (self::$hasApplyGstCol === null) {
+            try {
+                $stmt = $this->query("SHOW COLUMNS FROM {$this->table} LIKE 'apply_gst'");
+                self::$hasApplyGstCol = $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
+            } catch (\Exception $e) {
+                self::$hasApplyGstCol = false;
+            }
+        }
+        return self::$hasApplyGstCol;
+    }
+
+    /** Column list for SELECTs, including optional columns only when present. */
     private function detailsSelect(): string {
-        return $this->hasMedicineDetails() ? ', medicine_details' : '';
+        $cols = '';
+        if ($this->hasMedicineDetails()) $cols .= ', medicine_details';
+        if ($this->hasApplyGst())        $cols .= ', apply_gst';
+        return $cols;
     }
 
     /**
@@ -149,6 +171,11 @@ class ProgressReport extends BaseModel {
 
         if ($this->hasMedicineDetails() && isset($data['medicine_details'])) {
             $reportData['medicine_details'] = $data['medicine_details'];
+        }
+
+        // Per-visit GST override (1 = force on, 0 = force off). Absent = follow settings.
+        if ($this->hasApplyGst() && isset($data['apply_gst']) && $data['apply_gst'] !== '') {
+            $reportData['apply_gst'] = $data['apply_gst'] === '1' || $data['apply_gst'] === 1 ? 1 : 0;
         }
 
         // Idempotency key for records created offline and synced later.

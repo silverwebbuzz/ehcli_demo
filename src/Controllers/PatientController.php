@@ -275,6 +275,9 @@ class PatientController {
             if ($this->progressReportModel->hasMedicineDetails()) {
                 $allowed[] = 'medicine_details';
             }
+            if ($this->progressReportModel->hasApplyGst()) {
+                $allowed[] = 'apply_gst';
+            }
             $clean = array_intersect_key($data, array_flip($allowed));
 
             if (empty($clean)) {

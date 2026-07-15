@@ -2,11 +2,14 @@
 namespace App\Controllers;
 
 use App\Models\Report;
+use App\Models\Setting;
 
 class ReportController {
     private $model;
+    private $db;
 
     public function __construct($db) {
+        $this->db    = $db;
         $this->model = new Report($db);
     }
 
@@ -36,6 +39,30 @@ class ReportController {
             'byDay'   => $this->model->incomeByDay($from, $to),
             'byWeek'  => $this->model->incomeByWeek($from, $to),
             'byMonth' => $this->model->incomeByMonth($year),
+        ];
+    }
+
+    public function gst(array $params = []): array {
+        [$period, $from, $to] = $this->resolveDates($params);
+        $year = isset($params['year']) && (int)$params['year'] > 0
+            ? (int)$params['year']
+            : (int)date('Y', strtotime($from));
+
+        $settings   = new Setting($this->db);
+        $rate       = (float)($settings->get('inv_gst_rate', 18));
+        $settingOn  = ($settings->get('inv_gst_enabled', '0') === '1');
+        $gstNumber  = $settings->get('inv_gst_number', '');
+
+        return [
+            'period'    => $period, 'from' => $from, 'to' => $to, 'year' => $year,
+            'rate'      => $rate,
+            'settingOn' => $settingOn,
+            'gstNumber' => $gstNumber,
+            'summary'   => $this->model->gstSummary($from, $to, $rate, $settingOn),
+            'byDay'     => $this->model->gstByDay($from, $to, $rate, $settingOn),
+            'byWeek'    => $this->model->gstByWeek($from, $to, $rate, $settingOn),
+            'byMonth'   => $this->model->gstByMonth($year, $rate, $settingOn),
+            'detail'    => $this->model->gstDetail($from, $to, $rate, $settingOn),
         ];
     }
 
