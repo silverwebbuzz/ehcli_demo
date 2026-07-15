@@ -141,7 +141,7 @@
     <div class="login-container">
         <div class="login-header">
             <div class="logo">
-                <img src="/assets/logo/app-logo.png" alt="Dr. Feelgood">
+                <img src="/assets/logo/app-logo.svg" alt="Dr. Feelgood">
             </div>
             <h1>Dr.Demo</h1>
             <p>Clinic Management System</p>
