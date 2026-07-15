@@ -40,6 +40,10 @@ function fmtName($f, $l) {
     $canVisit   = in_array($viewerRole, ['doctor', 'asst_doctor']);
     // Reception may edit patient demographics/information, but NOT visits or history.
     $canEditInfo = in_array($viewerRole, ['doctor', 'asst_doctor', 'reception']);
+    // GST settings — when enabled, the visit page shows a GST breakdown on top of
+    // the entered amount (which stays the pre-tax base, same as the invoice).
+    $gstEnabled = (($clinicSettings['inv_gst_enabled'] ?? '0') === '1');
+    $gstRate    = $gstEnabled ? (float)($clinicSettings['inv_gst_rate'] ?? 18) : 0;
 ?>
 
 <style>
@@ -753,6 +757,21 @@ $finishApptId = $apptId ?: (int)($activeAppt['id'] ?? 0);
                         </select>
                     </div>
                 </div>
+                <?php if ($gstEnabled): ?>
+                <!-- GST breakdown — Amount above is the pre-tax base; GST is added here and on the invoice. -->
+                <div id="gstBreakdown" data-gst-rate="<?php echo htmlspecialchars($gstRate); ?>"
+                     style="margin-top:10px;border-top:1px dashed var(--gray-300);padding-top:8px;font-size:13px;">
+                    <div style="display:flex;justify-content:space-between;color:var(--gray-500);margin-bottom:3px;">
+                        <span>Subtotal</span><span>₹<span id="gstSubtotal">0</span></span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;color:var(--gray-500);margin-bottom:3px;">
+                        <span>GST (<?php echo $gstRate; ?>%)</span><span>₹<span id="gstAmount">0</span></span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--gray-800);">
+                        <span>Total payable</span><span>₹<span id="gstTotal">0</span></span>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Hidden fields: clean medicine names + structured name/amount rows -->
@@ -1053,6 +1072,9 @@ function createMedRows(cfg) {
             // Only when there is a total, so legacy visits without per-medicine
             // amounts keep their saved amount.
             if (amtEl && total > 0) amtEl.value = total;
+            // Refresh the GST breakdown (main visit form only; setting .value above
+            // doesn't fire an input event).
+            if (typeof window.updateGstBreakdown === 'function') window.updateGstBreakdown();
         },
 
         seed(list) {
@@ -1088,6 +1110,30 @@ const MedRows = createMedRows({
     namesEl: 'reportMedicins', detailsEl: 'reportMedicineDetails', amtEl: 'reportAmt'
 });
 MedRows.seed(<?php echo json_encode($seedRows ?? []); ?>);
+
+// ── GST breakdown ─────────────────────────────────────────────────────────────
+// Amount field holds the pre-tax base; recompute GST + total whenever it changes.
+(function () {
+    const box = document.getElementById('gstBreakdown');
+    if (!box) return;
+    const rate   = parseFloat(box.getAttribute('data-gst-rate')) || 0;
+    const amtEl  = document.getElementById('reportAmt');
+    const subEl  = document.getElementById('gstSubtotal');
+    const gstEl  = document.getElementById('gstAmount');
+    const totEl  = document.getElementById('gstTotal');
+    const money  = (n) => Number.isInteger(n) ? n : n.toFixed(2);
+    window.updateGstBreakdown = function () {
+        const base = parseFloat(amtEl.value) || 0;
+        const gst  = Math.round(base * rate) / 100;
+        subEl.textContent = money(base);
+        gstEl.textContent = money(gst);
+        totEl.textContent = money(base + gst);
+    };
+    // MedRows.sync() sets amtEl.value programmatically (no input event), so also
+    // hook into manual edits and refresh once on load.
+    amtEl.addEventListener('input', window.updateGstBreakdown);
+    window.updateGstBreakdown();
+})();
 <?php endif; ?>
 
 // Per-history-item medicine controllers, seeded lazily from each visit's saved rows.

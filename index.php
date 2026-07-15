@@ -250,6 +250,7 @@ switch ($route) {
         $patientId = $matches[1];
         $patientController = new PatientController($db);
         $response = $patientController->getDetail($patientId);
+        $clinicSettings = (new App\Models\Setting($db))->getAllSettings();
         require __DIR__ . '/views/patient/detail.php';
         break;
 
