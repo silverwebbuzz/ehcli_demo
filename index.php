@@ -41,15 +41,29 @@ if (is_dir($sessionPath) && is_writable($sessionPath)) {
 // for the full day; the sliding SESSION_TIMEOUT check in AuthController still
 // handles inactivity logout.
 ini_set('session.gc_maxlifetime', (string)$sessionLifetime);
+// Send the session cookie only over HTTPS when the request is secure. Detects
+// TLS directly or via a reverse-proxy header (common on shared hosting).
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['SERVER_PORT'] ?? '') == 443)
+    || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 session_set_cookie_params([
     'lifetime' => $sessionLifetime,
     'path'     => '/',
+    'secure'   => $isHttps,
     'httponly' => true,
     'samesite' => 'Lax',
 ]);
 
 // Start session
 session_start();
+
+// ── CSRF token bootstrap ─────────────────────────────────────────────────────
+// One stable per-session token, embedded in pages and echoed back by the client
+// on every state-changing request. Stable (not rotated per request) so offline
+// requests queued earlier can still be replayed within the same session.
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // Indian Standard Time for all date() calls
 date_default_timezone_set('Asia/Kolkata');
@@ -133,6 +147,37 @@ if (empty($route)) {
 
 // Asst. Doctor is locked to the Appointments + consultation workflow
 AuthController::enforceAsstDoctorScope($route);
+
+// ── CSRF protection ──────────────────────────────────────────────────────────
+// Verify the token on every state-changing request made by a logged-in user.
+// Unauthenticated public POSTs (login, online booking, patient lookup) aren't
+// session-bound actions, so they're naturally exempt. The tokenized public
+// intake link is exempt explicitly — it carries its own unguessable URL token
+// and may be filled in-clinic while a staff member is logged in.
+$csrfExempt = [
+    '#^api/intake/[a-f0-9]{40}/submit$#',
+    '#^api/booking$#',
+    '#^api/patient/lookup$#',
+];
+$isCsrfExempt = false;
+foreach ($csrfExempt as $pat) {
+    if (preg_match($pat, $route)) { $isCsrfExempt = true; break; }
+}
+if (!$isCsrfExempt
+    && in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'], true)
+    && AuthController::isLoggedIn()) {
+    $sentToken  = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['_csrf'] ?? '');
+    $knownToken = $_SESSION['csrf_token'] ?? '';
+    if ($knownToken === '' || !is_string($sentToken) || !hash_equals($knownToken, $sentToken)) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid or missing security token. Please refresh the page and try again.',
+        ]);
+        exit;
+    }
+}
 
 // Route handler
 switch ($route) {

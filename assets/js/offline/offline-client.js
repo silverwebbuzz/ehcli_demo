@@ -33,8 +33,13 @@
 
   // Save now → try the network → fall back to the outbox queue.
   // Returns { synced, uuid, serverId?, result?, queued?, error? }.
+  function csrfToken() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+
   async function saveOffline(entity, endpoint, payload) {
-    const record = await OfflineDB.addRecord(entity, endpoint, payload);
+    const record = await OfflineDB.addRecord(entity, endpoint, payload, csrfToken());
     emitChanged();
 
     if (!navigator.onLine) {
@@ -72,6 +77,7 @@
       return saveOffline(entity, endpoint, payload);
     }
     record.payload = payload;
+    record.csrf = csrfToken();   // refresh token in case the session rotated
     record.status = 'pending';
     record.attempts = 0;
     await OfflineDB.updateRecord(record);

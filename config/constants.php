@@ -3,8 +3,9 @@
  * Application Constants
  */
 
-// Debug Mode - Set to true during development, false in production
-define('DEBUG_MODE', true);
+// Debug Mode — OFF by default so stack traces are never shown in production.
+// Enable locally by setting the APP_DEBUG environment variable to 1/true/on.
+define('DEBUG_MODE', in_array(strtolower((string)getenv('APP_DEBUG')), ['1', 'true', 'on'], true));
 
 // Application Settings
 define('SITE_NAME', 'Homeopathy clinic demo');

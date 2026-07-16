@@ -12,6 +12,32 @@
     <link rel="icon" type="image/png" href="/assets/logo/favicon-32.png">
     <link rel="apple-touch-icon" href="/assets/logo/apple-touch-icon.png">
 <meta name="theme-color" content="#0d6efd">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
+    <script>
+    // Attach the CSRF token to every same-origin state-changing fetch, so no
+    // individual call site needs to remember it (covers the offline client too).
+    (function () {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var token = meta ? meta.getAttribute('content') : '';
+        if (!token || !window.fetch) return;
+        var origFetch = window.fetch;
+        window.fetch = function (input, init) {
+            init = init || {};
+            var method = (init.method
+                || (input && typeof input !== 'string' && input.method)
+                || 'GET').toUpperCase();
+            var url = (typeof input === 'string') ? input : (input && input.url) || '';
+            var sameOrigin = url.indexOf('http') !== 0 || url.indexOf(window.location.origin) === 0;
+            if (sameOrigin && ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1) {
+                var headers = new Headers(init.headers
+                    || (input && typeof input !== 'string' && input.headers) || {});
+                if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+                init.headers = headers;
+            }
+            return origFetch.call(this, input, init);
+        };
+    })();
+    </script>
 </head>
 <body>
     <?php

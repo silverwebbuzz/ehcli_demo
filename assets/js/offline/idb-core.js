@@ -52,13 +52,14 @@
   // ---- Public API ----
 
   // Queue a new outbound mutation. entity = 'report' | 'patient' | ...
-  function addRecord(entity, endpoint, payload) {
+  function addRecord(entity, endpoint, payload, csrf) {
     const record = {
       uuid: makeUuid(),
       entity: entity,
       endpoint: endpoint,
       method: 'POST',
       payload: payload,        // plain object
+      csrf: csrf || '',        // CSRF token, replayed by the service worker
       status: 'pending',       // pending | synced | failed
       attempts: 0,
       lastError: null,

@@ -28,6 +28,10 @@ class AuthController {
             return ['success' => false, 'message' => 'Invalid username or password'];
         }
 
+        // Prevent session fixation: issue a fresh session ID now that the
+        // identity has changed, discarding any pre-login (attacker-set) ID.
+        session_regenerate_id(true);
+
         $_SESSION['user_id']   = $user['id'];
         $_SESSION['username']  = $user['username'];
         $_SESSION['email']     = $user['email'];

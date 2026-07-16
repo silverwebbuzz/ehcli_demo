@@ -1,7 +1,7 @@
 // Dr. Feelgood service worker — network-first GET caching + offline sync outbox.
 importScripts('/assets/js/offline/idb-core.js');
 
-const CACHE_NAME = 'drfeelgood-v3';
+const CACHE_NAME = 'drfeelgood-v4';
 const SYNC_TAG = 'sync-outbox';
 const MAX_ATTEMPTS = 8;
 
@@ -61,7 +61,10 @@ async function flushOutbox() {
         try {
             const res = await fetch(record.endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': record.csrf || '',  // replay the token captured at enqueue time
+                },
                 credentials: 'include',            // send the session cookie
                 redirect: 'manual',                // don't follow a login redirect as "success"
                 body: JSON.stringify({
