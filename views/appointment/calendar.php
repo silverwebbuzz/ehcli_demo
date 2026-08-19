@@ -247,7 +247,9 @@ td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#f
 </div>
 
 <script>
-(function () {
+// The layout loads the Bootstrap bundle *after* $content, so nothing here may
+// touch `bootstrap` until the document has finished parsing.
+document.addEventListener('DOMContentLoaded', function () {
     const TODAY      = '<?php echo $today; ?>';
     const CAN_CONSULT = <?php echo $canConsult ? 'true' : 'false'; ?>;
     const DOW        = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -289,8 +291,15 @@ td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#f
     const loadEl    = document.getElementById('calLoading');
     const rangeEl   = document.getElementById('calRange');
     const rangeSub  = document.getElementById('calRangeSub');
-    const bookModal = new bootstrap.Modal(document.getElementById('bookModal'));
-    const apptModal = new bootstrap.Modal(document.getElementById('apptModal'));
+    let _bookModal = null, _apptModal = null;
+    const bookModal = {
+        show: () => (_bookModal = _bookModal || new bootstrap.Modal(document.getElementById('bookModal'))).show(),
+        hide: () => _bookModal && _bookModal.hide(),
+    };
+    const apptModal = {
+        show: () => (_apptModal = _apptModal || new bootstrap.Modal(document.getElementById('apptModal'))).show(),
+        hide: () => _apptModal && _apptModal.hide(),
+    };
 
     function range() {
         if (view === 'day')  return { from: anchor, to: anchor };
@@ -725,7 +734,7 @@ td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#f
     });
 
     load();
-})();
+});
 </script>
 
 <?php
