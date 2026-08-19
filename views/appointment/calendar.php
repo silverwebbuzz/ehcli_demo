@@ -54,7 +54,8 @@ td.slot-cell:hover { background:#f5f9ff; }
 td.slot-cell.off  { background:#fafafa; cursor:default; }
 td.slot-cell.off:hover { background:#fafafa; }
 td.slot-cell.full { cursor:default; }
-td.slot-cell.past { background:#fbfbfb; }
+td.slot-cell.past { background:#fbfbfb; cursor:default; }
+td.slot-cell.past:hover { background:#fbfbfb; }
 td.slot-cell .add-hint { display:none; font-size:10px; color:var(--primary); font-weight:700; }
 td.slot-cell:hover .add-hint { display:block; }
 td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f3f4f6 6px,#f3f4f6 12px); cursor:default; }
@@ -91,6 +92,9 @@ td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#f
 .m-cell.outside { background:#fcfcfd; }
 .m-cell.outside .m-date { color:#d1d5db; }
 .m-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f3f4f6 6px,#f3f4f6 12px); cursor:default; }
+.m-cell.past { background:#fcfcfd; cursor:default; }
+.m-cell.past:hover { background:#fcfcfd; }
+.m-cell.past .m-date .dd { color:#9ca3af; }
 .m-date { font-size:12px; font-weight:700; color:#374151; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; }
 .m-cell.is-today .m-date .dd {
     background:var(--primary); color:#fff; border-radius:50%;
@@ -207,7 +211,7 @@ td.slot-cell.closed-cell { background:repeating-linear-gradient(45deg,#fafafa,#f
           <div class="row g-2">
             <div class="col-6">
               <label class="form-label" style="font-size:12px;font-weight:600;">Date *</label>
-              <input type="date" class="form-control form-control-sm" id="bookDate" required>
+              <input type="date" class="form-control form-control-sm" id="bookDate" min="<?php echo $today; ?>" required>
             </div>
             <div class="col-6 d-flex align-items-end">
               <div class="form-check" style="font-size:12px;">
@@ -409,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const list = byCell[d + ' ' + t] || [];
                 const live = list.filter(a => a.status !== 'cancelled' && a.status !== 'no_show').length;
                 const offered = (day.slots || []).includes(t);
-                const isPast  = d < TODAY || (d === TODAY && t < now);
+                const isPast  = d < TODAY || (d === TODAY && t <= now);
                 const full    = live >= feed.max_per_slot;
 
                 let cls = 'slot-cell';
@@ -418,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 else if (full)           cls += ' full';
                 if (isPast)              cls += ' past';
 
-                const bookable = !day.closed && offered && !full;
+                const bookable = !day.closed && offered && !full && !isPast;
                 h += '<td class="' + cls + '"'
                    + (bookable ? ' data-book-date="' + d + '" data-book-time="' + t + '"' : '') + '>'
                    + list.map(a => chipHtml(a, false)).join('')
@@ -449,13 +453,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const day     = feed.days[d];
             const list    = (byDate[d] || []).sort((a, b) => (a.time || '~').localeCompare(b.time || '~'));
             const closed  = day ? day.closed : false;
+            const isPast  = d < TODAY;
 
             let cls = 'm-cell';
             if (outside) cls += ' outside';
             if (closed)  cls += ' closed-cell';
+            if (isPast)  cls += ' past';
             if (d === TODAY) cls += ' is-today';
 
-            h += '<div class="' + cls + '"' + (closed ? '' : ' data-book-date="' + d + '"') + '>'
+            h += '<div class="' + cls + '"' + (closed || isPast ? '' : ' data-book-date="' + d + '"') + '>'
                + '<div class="m-date"><span class="dd">' + dt.getDate() + '</span>'
                + (list.length ? '<span class="m-count">' + list.length + '</span>' : '')
                + '</div>';
@@ -588,6 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let bookMode = 'existing', pickedPatient = null, pickedSlot = '', wantSlot = '';
 
     function openBook(date, time) {
+        if (!date || date < TODAY) date = TODAY;   // never pre-fill a past date
         pickedSlot = '';
         wantSlot   = time || '';
         document.getElementById('bookDate').value = date;
@@ -667,6 +674,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const date = document.getElementById('bookDate').value;
         const area = document.getElementById('bookSlots');
         if (!date) { area.innerHTML = '<span style="color:#9ca3af;font-size:12px;">Pick a date first.</span>'; return; }
+        if (date < TODAY) {
+            area.innerHTML = '<span style="color:#ef4444;font-size:12px;"><i class="fas fa-ban"></i> This date has already passed.</span>';
+            return;
+        }
         area.innerHTML = '<span style="color:#9ca3af;font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Loading slots…</span>';
         const ext = document.getElementById('bookExtended').checked ? '1' : '0';
         fetch('/api/slots?date=' + encodeURIComponent(date) + '&extended=' + ext)
@@ -701,8 +712,9 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('bookForm').addEventListener('submit', function (e) {
         e.preventDefault();
         const date = document.getElementById('bookDate').value;
-        if (!date)       { alertBox('Please choose a date.', 'danger'); return; }
-        if (!pickedSlot) { alertBox('Please choose a time slot.', 'danger'); return; }
+        if (!date)         { alertBox('Please choose a date.', 'danger'); return; }
+        if (date < TODAY)  { alertBox('Cannot book an appointment in the past.', 'danger'); return; }
+        if (!pickedSlot)   { alertBox('Please choose a time slot.', 'danger'); return; }
 
         const fd = new FormData();
         fd.append('appt_date', date);

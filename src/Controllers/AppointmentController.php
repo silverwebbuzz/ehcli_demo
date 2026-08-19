@@ -195,6 +195,21 @@ class AppointmentController {
      */
     public function createPrebooked($data, $userId = null, $extended = false) {
         try {
+            // A slot in the past can never be booked — enforced here rather than
+            // only in the calendar UI, since this is also the public booking
+            // endpoint and the client's clock is not trustworthy.
+            $date = trim($data['appt_date'] ?? '');
+            $slot = substr(trim($data['slot_time'] ?? ''), 0, 5);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                return ['success' => false, 'message' => 'Please choose a valid date'];
+            }
+            if ($date < date('Y-m-d')) {
+                return ['success' => false, 'message' => 'Cannot book an appointment in the past'];
+            }
+            if ($date === date('Y-m-d') && $slot !== '' && $slot <= date('H:i')) {
+                return ['success' => false, 'message' => 'That time has already passed today'];
+            }
+
             // Validate slot still available
             $slots = $this->getAvailableSlots($data['appt_date'], $extended);
             $slotAvailable = false;
