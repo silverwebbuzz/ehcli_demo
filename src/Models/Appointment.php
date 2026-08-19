@@ -116,8 +116,8 @@ class Appointment extends BaseModel {
         return $this->insert($insert);
     }
 
-    /** Create pre-booked appointment (public page) */
-    public function createPrebooked($data) {
+    /** Create pre-booked appointment (public booking page or staff calendar) */
+    public function createPrebooked($data, $userId = null) {
         $date = $data['appt_date'];
         $insert = [
             'patient_id'      => !empty($data['patient_id']) ? (int)$data['patient_id'] : null,
@@ -131,7 +131,7 @@ class Appointment extends BaseModel {
             'chief_complaint' => $data['chief_complaint'] ?? null,
             'is_new_patient'  => $data['is_new_patient'] ?? 0,
             'is_followup'     => $data['is_followup'] ?? 0,
-            'created_by'      => null,
+            'created_by'      => $userId,
         ];
         return $this->insert($insert);
     }
@@ -187,6 +187,31 @@ class Appointment extends BaseModel {
                 )
                 WHERE a.appt_date BETWEEN ? AND ?
                 ORDER BY a.appt_date ASC, a.token_number ASC, a.slot_time ASC";
+        $stmt = $this->query($sql, [$from, $to]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Lightweight appointment feed for the calendar view.
+     * Skips the progress_report join the queue table needs — the calendar only
+     * renders name / time / status chips, so the cheaper query keeps a month
+     * view fast.
+     */
+    public function getCalendar($from, $to) {
+        $sql = "SELECT a.id, a.patient_id, a.appt_date, a.slot_time, a.token_number,
+                       a.type, a.status, a.patient_name, a.patient_phone,
+                       a.chief_complaint, p.fname, p.lname, p.contact_no
+                FROM {$this->table} a
+                LEFT JOIN patient p ON a.patient_id = p.id
+                WHERE a.appt_date BETWEEN ? AND ?
+                ORDER BY a.appt_date ASC, a.slot_time IS NULL ASC, a.slot_time ASC, a.token_number ASC";
+        $stmt = $this->query($sql, [$from, $to]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Closed / holiday dates falling inside a range */
+    public function getClosedDatesBetween($from, $to) {
+        $sql = "SELECT date, reason FROM clinic_closed_dates WHERE date BETWEEN ? AND ? ORDER BY date ASC";
         $stmt = $this->query($sql, [$from, $to]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

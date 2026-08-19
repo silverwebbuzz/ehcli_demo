@@ -116,6 +116,9 @@ class AuthController {
             '#^login$#',
             '#^logout$#',
             '#^queue$#',                       // Appointments page
+            '#^calendar$#',                    // Appointments calendar
+            '#^api/calendar$#',                // Calendar feed
+            '#^api/appointment/book$#',        // Book a slot from the calendar
             '#^walkin$#',                      // Book walk-in from Appointments
             '#^patient/\d+$#',                 // Patient detail (consultation)
             '#^api/appointment/\d+/status$#',  // Call / finish / status changes

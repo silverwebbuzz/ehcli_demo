@@ -90,6 +90,9 @@ $multiDay = ($view !== 'today');
 
         <!-- Today / This Week / This Month pills -->
         <div class="appt-view-tabs">
+            <a href="/calendar" class="appt-view-tab">
+                <i class="fas fa-calendar-alt"></i> Calendar
+            </a>
             <a href="/queue?view=today" class="appt-view-tab <?php echo $view==='today'?'active':''; ?>">
                 <i class="fas fa-sun"></i> Today
             </a>

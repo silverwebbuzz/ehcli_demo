@@ -479,6 +479,40 @@ switch ($route) {
         require __DIR__ . '/views/appointment/walkin.php';
         break;
 
+    case 'calendar':
+        AuthController::requireLogin();
+        require __DIR__ . '/views/appointment/calendar.php';
+        break;
+
+    case 'api/calendar':
+        AuthController::requireLogin();
+        header('Content-Type: application/json');
+        $from = $_GET['from'] ?? date('Y-m-01');
+        $to   = $_GET['to']   ?? date('Y-m-t');
+        // Guard the range so a hand-edited URL can't ask for years of data
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)
+            || strtotime($to) < strtotime($from)
+            || (strtotime($to) - strtotime($from)) > 86400 * 62) {
+            echo json_encode(['success' => false, 'message' => 'Invalid date range']); exit;
+        }
+        $apptController = new AppointmentController($db);
+        echo json_encode($apptController->getCalendarFeed($from, $to));
+        exit;
+
+    case 'api/appointment/book':
+        // Staff booking from the calendar — same flow as the public booking page,
+        // but allowed into extended hours and stamped with the staff user.
+        AuthController::requireLogin();
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'POST required']); exit;
+        }
+        $apptController = new AppointmentController($db);
+        $extended = ($_POST['extended'] ?? '0') === '1';
+        $response = $apptController->createPrebooked($_POST, $_SESSION['user_id'] ?? null, $extended);
+        echo json_encode($response);
+        exit;
+
     case 'clinic-settings':
         // Only doctor can access settings
         AuthController::requireRole('doctor');

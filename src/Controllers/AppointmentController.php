@@ -188,11 +188,15 @@ class AppointmentController {
         }
     }
 
-    /** Create pre-booked appointment (public page) */
-    public function createPrebooked($data) {
+    /**
+     * Create a pre-booked appointment.
+     * Used by the public booking page ($extended = false, no creator) and by the
+     * staff calendar, which may book into extended hours and records who booked.
+     */
+    public function createPrebooked($data, $userId = null, $extended = false) {
         try {
             // Validate slot still available
-            $slots = $this->getAvailableSlots($data['appt_date']);
+            $slots = $this->getAvailableSlots($data['appt_date'], $extended);
             $slotAvailable = false;
             foreach ($slots['slots'] ?? [] as $s) {
                 if ($s['time'] === $data['slot_time'] && $s['available']) {
@@ -231,7 +235,7 @@ class AppointmentController {
             }
 
             $data['patient_phone'] = self::cleanPhone($data['patient_phone'] ?? '');
-            $id   = $this->apptModel->createPrebooked($data);
+            $id   = $this->apptModel->createPrebooked($data, $userId);
             $appt = $this->apptModel->getById($id);
             return [
                 'success'      => true,
@@ -241,6 +245,64 @@ class AppointmentController {
                 'slot_time'    => $data['slot_time'],
                 'appt_date'    => $data['appt_date'],
                 'patient_id'   => $data['patient_id'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Calendar feed — every appointment in a date range plus, for each day, the
+     * slot grid the clinic settings generate. The view builds its time axis from
+     * these slots so the calendar always matches the configured clinic hours.
+     */
+    public function getCalendarFeed($from, $to, $extended = true) {
+        try {
+            $rows  = $this->apptModel->getCalendar($from, $to);
+            $appts = [];
+            foreach ($rows as $r) {
+                $name = trim(($r['fname'] ?? '') . ' ' . ($r['lname'] ?? ''));
+                $appts[] = [
+                    'id'         => (int)$r['id'],
+                    'patient_id' => !empty($r['patient_id']) ? (int)$r['patient_id'] : null,
+                    'date'       => $r['appt_date'],
+                    'time'       => !empty($r['slot_time']) ? substr($r['slot_time'], 0, 5) : null,
+                    'token'      => (int)$r['token_number'],
+                    'type'       => $r['type'],
+                    'status'     => $r['status'],
+                    'name'       => $name !== '' ? $name : ($r['patient_name'] ?: 'Unknown'),
+                    'phone'      => $r['patient_phone'] ?: ($r['contact_no'] ?? ''),
+                    'complaint'  => $r['chief_complaint'] ?? '',
+                ];
+            }
+
+            // Closed days, keyed by date for a cheap lookup in the view
+            $closed = [];
+            foreach ($this->apptModel->getClosedDatesBetween($from, $to) as $c) {
+                $closed[$c['date']] = $c['reason'] ?: 'Clinic closed';
+            }
+
+            $days   = [];
+            $cursor = strtotime($from);
+            $end    = strtotime($to);
+            while ($cursor <= $end) {
+                $d = date('Y-m-d', $cursor);
+                $days[$d] = [
+                    'closed' => isset($closed[$d]),
+                    'reason' => $closed[$d] ?? null,
+                    'slots'  => isset($closed[$d]) ? [] : $this->settingModel->generateSlots($d, $extended),
+                ];
+                $cursor = strtotime('+1 day', $cursor);
+            }
+
+            return [
+                'success'      => true,
+                'from'         => $from,
+                'to'           => $to,
+                'appointments' => $appts,
+                'days'         => $days,
+                'max_per_slot' => max(1, (int)$this->settingModel->get('max_per_slot', 1)),
+                'slot_minutes' => max(5, (int)$this->settingModel->get('slot_duration_min', 30)),
             ];
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];

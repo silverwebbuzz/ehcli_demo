@@ -106,11 +106,17 @@
                         </li>
                         <?php endif; ?>
 
-                        <li>
-                            <a href="/queue" class="<?php echo (strpos($uri, 'queue') !== false || strpos($uri, 'walkin') !== false) ? 'active' : ''; ?>">
+                        <?php $onAppts = (strpos($uri, 'queue') !== false || strpos($uri, 'walkin') !== false || strpos($uri, 'calendar') !== false); ?>
+                        <li class="has-submenu <?php echo $onAppts ? 'open' : ''; ?>">
+                            <a href="#" class="<?php echo $onAppts ? 'active' : ''; ?>" onclick="toggleSubmenu(this);return false;">
                                 <i class="fas fa-calendar-check"></i>
                                 <span>Appointments</span>
+                                <i class="fas fa-chevron-down submenu-arrow"></i>
                             </a>
+                            <ul class="submenu">
+                                <li><a href="/queue"    class="<?php echo (strpos($uri,'queue')!==false || strpos($uri,'walkin')!==false)?'active':''; ?>"><i class="fas fa-list-ol"></i> Queue / List</a></li>
+                                <li><a href="/calendar" class="<?php echo strpos($uri,'calendar')!==false?'active':''; ?>"><i class="fas fa-calendar-alt"></i> Calendar</a></li>
+                            </ul>
                         </li>
 
                         <?php if ($canReports): ?>
