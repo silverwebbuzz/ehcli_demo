@@ -57,8 +57,8 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <a href="<?php echo $isAsstDoctor ? '/queue' : '/dashboard'; ?>" class="app-brand">
-                    <img src="/assets/logo/app-logo.svg" alt="Homeopathy Clinic Management" class="app-brand-logo">
-                    <span>Homeopathy Clinic Management</span>
+                    <img src="/assets/logo/app-logo.svg" alt="Clinic Management" class="app-brand-logo">
+                    <span>Clinic Management</span>
                 </a>
             </div>
 
